@@ -1,16 +1,19 @@
 #!/bin/bash
+ptest='./regress_test/';
+pcase='./case/';
 function usage 
 {
-    echo "usage: -g or -t";
+    echo "usage: -g or -t or -d";
 }
 
-while getopts "gt" OPTION
+while getopts "gtd" OPTION
 do
     case $OPTION in
         g)
             echo "generate golden result";
-            for file in *.ir; do
-                ./main $file | grep "regress" > regress_test/$file.golden;
+            for file in $pcase*.ir; do
+                _file=`basename $file`;
+                ./main $file | grep "regress" > $ptest$_file.golden;
             done
             exit 1;
             ;;
@@ -21,6 +24,11 @@ do
                 ./main $file | grep "regress" > regress_test/$file.result;
                 diff regress_test/$file.result regress_test/$file.golden
             done
+            exit 1;
+            ;;
+        d)
+            echo "delete all test files"
+            rm -f $ptest*
             exit 1;
             ;;
         ?) 
