@@ -40,13 +40,13 @@ class node
         pint rs;
         int rd;
         node* first;
-        set<node*> pres;
+        pair<node*, node*> pres;
         set<node*> sucs;
         set<node*> cuts;
         super_node* wrap; // node wrapper
 
         node(int _id, int _op);
-        void dbg();
+        //void dbg();
         ~node();
 
 };
@@ -70,9 +70,19 @@ class super_node
         void cut();
         void cut(super_node* target);
         void add_node(node* n);
-        void dbg();
+        //void dbg();
 
         ~super_node();
+};
+
+class super_cas
+{
+    public:
+        super_node* sc;
+        super_node* parent;
+        pair<super_node*, super_node*> child;
+        super_cas(super_node* _sc);
+        void connect(super_node* pa);
 };
 
 typedef set<super_node*> sns;

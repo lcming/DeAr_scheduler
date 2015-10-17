@@ -3,7 +3,14 @@
 extern sns root;
 extern sns leaf;
 extern sns cut;
-extern int gcnt;
+extern int rcnt;
+extern int tcnt;
+
+super_cas::super_cas(super_node* _sc)
+{
+    sc = _sc;
+    child.first = child.second = NULL;
+}
 
 node::node(int _id, int _op)
 {
@@ -11,30 +18,30 @@ node::node(int _id, int _op)
     assert(_op >= ADD && _op <= SHI);
     op = _op;
     wrap = NULL;
+    pres.first = pres.second = NULL;
     rd = ops = rs.first = rs.second = -1;
-}
-
-void node::dbg()
-{
-    /*
-    printf("id:%d, op:%d", id, op);
-    printf("\n");
-    printf("pres:");
-    for(int i = 0; i < pres.size(); i++)
-        printf("%d, ", pres[i]->id);
-    printf("\n");
-
-    printf("sucs:");
-    for(int i = 0; i < sucs.size(); i++)
-        printf("%d, ", sucs[i]->id);
-    printf("\n");
-    */
 }
 
 void connect(node* src, node* dst)
 {
     src->sucs.insert(dst);
-    dst->pres.insert(src);
+
+    //===================================
+    // To avoid reversing to operands, 
+    // we must know which pre comes first
+    //===================================
+    if(dst->pres.first == NULL) // not used yet
+        dst->pres.first = src;
+    else if(dst->pres.second == NULL)
+    {
+        dst->pres.second = src;
+        assert(dst->pres.first != dst->pres.second);
+    }
+    else
+    {
+        printf("fatal: more than 2 pres\n");
+        exit(1);
+    }
 }
 void connect(super_node* src, super_node* dst)
 {
@@ -104,43 +111,6 @@ super_node::~super_node()
 {
 
 }
-
-void super_node::dbg()
-{
-    /*
-    printf("regress: id:[ %s]\n", id.c_str());
-    printf("regress: pres:");
-    for(int i = 0; i < pres.size(); i++)
-        printf("[ %s]  ", pres[i]->id.c_str());
-    printf("\n");
-
-    printf("regress: sucs:");
-    for(int i = 0; i < sucs.size(); i++)
-        printf("[ %s]  ", sucs[i]->id.c_str());
-    printf("\n");
-
-    for(int i = 0; i < pres.size(); i++)
-        pres[i]->dbg();
-    */
-}
-
-/*
-void update_stack(super_node* target) // fwd update
-{
-    if(target->pres.size() == 2)
-    {
-        printf("regress: update ss of [ %s] from %d", target->id.c_str(), target->ss);
-        int left = target->pres[0]->ss;
-        int right = target->pres[1]->ss;
-        target->ss = (left > right)? right + 1 : left + 1;
-        printf(" to %d\n", target->ss);
-    }
-    // fwd update stack
-    for(int i = 0; i < target->sucs.size(); i++)
-        update_stack(target->sucs[i]);
-}
-*/
-
 int analyze_stack(super_node* target)
 {
     sns::iterator it;
@@ -162,7 +132,7 @@ int analyze_stack(super_node* target)
     {
         printf("fatal: [ %s] error psize %d\n", target->id.c_str(), psize);
     }
-    printf("regress: stack of [ %s] is %d\n", target->id.c_str(), target->ss);
+    printf("stack: size of [ %s] is %d\n", target->id.c_str(), target->ss);
     return target->ss;
 }
 
@@ -234,7 +204,7 @@ void schedule(super_node* target)
             schedule(right);
 
             left->cas.front()->ops = POP; // pop
-            target->cas.back()->rs.first = right->cas.front()->op;
+            target->cas.back()->rs.first = left->cas.front()->op;
             schedule(left); 
         }
         // todo: set rn, rs for target
@@ -257,35 +227,48 @@ void schedule(super_node* target)
             case ADD:
                 op_name = "add"; break;
             case MUL:
-                op_name = "add"; break;
+                op_name = "mul"; break;
             case SHI:
-                op_name = "add"; break;
+                op_name = "shi"; break;
             default:
                 printf("fatal: no such type of op code %d\n", n->op);
                 exit(1);
         }
-        if(n->cuts.size() > 0)
-            n->rd = gcnt++;
-        printf("schedule %d:%s, %%%d, %%%d, %%%d, (%d)", n->id, op_name, n->rd, n->rs.first, n->rs.second, n->ops);
+        if(n->cuts.size() > 0) // cut node must write back temp result
+        {
+            n->rd = tcnt++;
+            printf("schedule %d: %s, %%t%d, %%%d, %%%d", n->id, op_name, n->rd, n->rs.first, n->rs.second);
+        }
+        else if(n->sucs.size() == 0) // final result
+        {
+            n->rd = rcnt++;
+            printf("schedule %d: %s, %%r%d, %%%d, %%%d", n->id, op_name, n->rd, n->rs.first, n->rs.second);
+        }
+        else
+            printf("schedule %d: %s, %%%d, %%%d, %%%d", n->id, op_name, n->rd, n->rs.first, n->rs.second);
         if(n->ops == PUSH)
             printf(", PUSH");
         else if(n->ops == POP)
             printf(", POP");
         printf("\n");
-    }
-    /*
-    // trigger sibs merging
-    int ssize = target->sibs.size();
-    if(ssize > 1)
-    {
-        for(int i = 0; i < ssize; i++) 
+
+        // update the rs of the following node
+        if(i > 0)
         {
-            super_node* merger = target->sibs[i];
-            if(merger->sucs.size() == 1 && !merger->done && !merger->sucs[0]->done) // sibling exist and it can be merged
-                merger->merge();
+            node* next = target->cas[i-1];
+            if(n == next->pres.first)
+                next->rs.first = n->op;
+            else if(n == next->pres.second)
+                next->rs.second = n->op;
+            else
+            {
+                printf("fatal: scheduler doesn't match pre\n");
+                exit(1);
+            }
         }
+            
+        
     }
-    */
 }
 
 

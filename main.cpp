@@ -8,7 +8,8 @@ using namespace std;
 
 
 int gid = 0;
-int gcnt = 1;
+int rcnt = 0; // cnt for final result
+int tcnt = 0; // cnt for temp resul
 sns leaf; // global vec to store leaf super node
 sns root; // global vec to store leaf super node
 sns cut;
@@ -22,11 +23,9 @@ int main(int argc, char* argv[])
     sns::iterator it;
     vector<node*> list = init_dfg(argv[1]);
     init_super_dfg(list);
-    printf("regress: # of leaf = %d, root = %d\n", leaf.size(), root.size());
-
+    
+    printf("overview: # of leaf = %d, root = %d\n", leaf.size(), root.size());
     //vector<super_node*> test_leaf = get_partial_leaf(root);
-    for(it = root.begin(); it != root.end(); ++it)
-        (*it)->dbg();
 
     for(it = cut.begin(); it != cut.end(); ++it)
     {
@@ -54,43 +53,63 @@ super_node* build_super(node* target)
     super->add_node(target);
 
     // search until encounter a node with non-one pre, which implies the end of the super node
-    while(target->pres.size() == 1 && (*target->pres.begin())->sucs.size() == 1)
+    while(target->pres.first != NULL && target->pres.second == NULL && target->pres.first->sucs.size() == 1)
     {
-        target = *target->pres.begin();
+        target = target->pres.first;
         super->add_node(target);
     }
     printf("\n");
 
-    int psize = target->pres.size();
-    // more than one pre: growing new super nodes
-    if(psize == 0)
+    // a leaf node w/o pre
+    if(target->pres.first == NULL)
     {
         super->level = 0;
         leaf.insert(super);
+        return super;
     }
-    else
+
+    if(target->pres.first != NULL) // got a pre to grow new sn
     {
         int level = 0;
-        nds::iterator it;
-        for(it = target->pres.begin(); it != target->pres.end(); ++it)
-        {
-            super_node* super_pre;
-            if((*it)->wrap == NULL)  // node not create yet, build
-                super_pre = build_super((*it));
-            else
-            {
-                super_pre = (*it)->wrap;
-                cut.insert(super_pre);
-            }
-            // connect
-            printf("regress: super [ %s] connect to [ %s]\n", super_pre->id.c_str(), super->id.c_str());
-            connect((*it)->wrap, super);
-            if(super_pre->level > level)
-                level = super_pre->level;
-        }
-        super->level = level + 1;
 
+        super_node* super_pre;
+        if(target->pres.first->wrap == NULL)  // node not create yet, build
+            super_pre = build_super(target->pres.first);
+        else
+        {
+            super_pre = target->pres.first->wrap;
+            cut.insert(super_pre);
+        }
+        // connect
+        printf("regress: super [ %s] connect to [ %s]\n", super_pre->id.c_str(), super->id.c_str());
+        connect(target->pres.first->wrap, super);
+        if(super_pre->level > level)
+            level = super_pre->level;
+
+        super->level = level + 1;
     }
+
+    if(target->pres.second != NULL) // got a pre to grow new sn
+    {
+        int level = 0;
+
+        super_node* super_pre;
+        if(target->pres.second->wrap == NULL)  // node not create yet, build
+            super_pre = build_super(target->pres.second);
+        else
+        {
+            super_pre = target->pres.second->wrap;
+            cut.insert(super_pre);
+        }
+        // connect
+        printf("regress: super [ %s] connect to [ %s]\n", super_pre->id.c_str(), super->id.c_str());
+        connect(target->pres.second->wrap, super);
+        if(super_pre->level > level)
+            level = super_pre->level;
+
+        super->level = level + 1;
+    }
+
     printf("[ %s] level = %d\n", super->id.c_str(), super->level);
     return super;
 }

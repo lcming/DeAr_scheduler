@@ -13,16 +13,17 @@ do
             echo "generate golden result";
             for file in $pcase*.ir; do
                 _file=`basename $file`;
-                ./main $file | grep "regress" > $ptest$_file.golden;
+                ./main $file | grep "schedule" > $ptest$_file.golden;
             done
             exit 1;
             ;;
         t)
             echo "regression test"
-            for file in *.ir; do
-                echo "$file:";
-                ./main $file | grep "regress" > regress_test/$file.result;
-                diff regress_test/$file.result regress_test/$file.golden
+            for file in $pcase*.ir; do
+                _file=`basename $file`;
+                echo "$_file:";
+                ./main $file | grep "schedule" > $ptest$_file.result;
+                diff $ptest$_file.result $ptest$_file.golden
             done
             exit 1;
             ;;
