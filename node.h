@@ -11,21 +11,24 @@
 #include <set>
 
 #define RF_SIZE 16
+#define READABLE
 
 using namespace std;
 
 
 enum
 {
-    ADD,
+    ADD = RF_SIZE,
     MUL,
-    SHI
+    SHI,
+    STACK
+
 };
 
 enum
 {
-    PUSH = -3,
-    POP = -2
+    PUSH,
+    POP
 };
 
 class super_node;
@@ -59,10 +62,10 @@ class super_node
         int done; // done flag
         int dest; // result destination
         int level;
+        int ready;
         vector<node*> cas;
         set<super_node*> pres;
         set<super_node*> sucs;
-        set<super_node*> sibs;
 
 
         super_node();

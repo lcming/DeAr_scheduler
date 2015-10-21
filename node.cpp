@@ -45,12 +45,6 @@ void connect(node* src, node* dst)
 }
 void connect(super_node* src, super_node* dst)
 {
-    sns::iterator it;
-    for(it = dst->pres.begin(); it != dst->pres.end(); ++it) // search all sibs
-    {
-        src->sibs.insert(*it);
-        (*it)->sibs.insert(src);
-    }
     src->sucs.insert(dst);
     dst->pres.insert(src);
 }
@@ -157,6 +151,7 @@ void super_node::cut() // split cut node
     int maxlv = 0;
     int id = -1;
     super_node* mergee;
+
     // find the max level
     for(it = sucs.begin(); it != sucs.end(); ++it)
     {
@@ -200,7 +195,7 @@ void schedule(super_node* target)
         else
         {
             right->cas.front()->ops = PUSH; // push
-            target->cas.back()->rs.second = PUSH;
+            target->cas.back()->rs.second = STACK;
             schedule(right);
 
             left->cas.front()->ops = POP; // pop
@@ -234,22 +229,71 @@ void schedule(super_node* target)
                 printf("fatal: no such type of op code %d\n", n->op);
                 exit(1);
         }
+
+        // allocate rd
         if(n->cuts.size() > 0) // cut node must write back temp result
         {
-            n->rd = tcnt++;
-            printf("schedule %d: %s, %%t%d, %%%d, %%%d", n->id, op_name, n->rd, n->rs.first, n->rs.second);
+            n->rd = rcnt;
+            nds::iterator it;
+            // update rs for each cut node
+            for(it = n->cuts.begin(); it != n->cuts.end(); ++it)
+            {
+                if( (*it)->pres.first == n ) 
+                {
+                    (*it)->rs.first = rcnt;
+                }
+                else if( (*it)->pres.second ==n )
+                {
+                    (*it)->rs.second = rcnt;
+                }
+                else
+                {
+                    printf("fatal: cut node not match\n");
+                    exit(1);
+                }
+            }
+            rcnt++;
         }
         else if(n->sucs.size() == 0) // final result
         {
-            n->rd = rcnt++;
-            printf("schedule %d: %s, %%r%d, %%%d, %%%d", n->id, op_name, n->rd, n->rs.first, n->rs.second);
+            n->rd = rcnt;
         }
-        else
-            printf("schedule %d: %s, %%%d, %%%d, %%%d", n->id, op_name, n->rd, n->rs.first, n->rs.second);
+
+        // allocate rs
+        if(n->pres.first == 0) // leaf
+        {
+            n->rs.first = rcnt; 
+            n->rs.second = rcnt+1;
+        }
+
+        // string that increase readability of assembly
+        string rd, rs1, rs2;
+#ifdef READABLE
+        if(n->rd == -1)
+            rd = "(no WB)";
+        switch(n->rs.first)
+        {
+            case ADD:   rs1 = "(ADD)";    break;
+            case MUL:   rs1 = "(MUL)";    break;
+            case SHI:   rs1 = "(SHI)";    break;
+            case STACK: rs1 = "(STACK)";  break;
+        }
+        switch(n->rs.second)
+        {
+            case ADD:   rs2 = "(ADD)";    break;
+            case MUL:   rs2 = "(MUL)";    break;
+            case SHI:   rs2 = "(SHI)";    break;
+            case STACK: rs2 = "(STACK)";  break;
+        }   
+#endif
+
+
+        printf("schedule %*d: %s, %%%*d%s, %%%*d%s, %%%*d%s", 3, n->id, op_name, 2, n->rd, rd.c_str(), 2, n->rs.first, rs1.c_str(), 2, n->rs.second, rs2.c_str());
+
         if(n->ops == PUSH)
             printf(", PUSH");
         else if(n->ops == POP)
-            printf(", POP");
+            printf(",  POP");
         printf("\n");
 
         // update the rs of the following node

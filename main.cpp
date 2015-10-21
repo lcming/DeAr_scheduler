@@ -8,14 +8,14 @@ using namespace std;
 
 
 int gid = 0;
-int rcnt = 0; // cnt for final result
-int tcnt = 0; // cnt for temp resul
+int rcnt = 0; // cnt for temp result
 sns leaf; // global vec to store leaf super node
 sns root; // global vec to store leaf super node
 sns cut;
 vector<node*> init_dfg(char* filename);
 void init_super_dfg(vector<node*> list);
 super_node* build_super(node* target);
+
 
 
 int main(int argc, char* argv[])
