@@ -10,7 +10,7 @@
 #include <string>
 #include <set>
 
-#define RF_SIZE 16
+#define RF_SIZE 32
 #define READABLE
 
 using namespace std;
@@ -28,10 +28,13 @@ enum
 enum
 {
     PUSH,
-    POP
+    POP,
+    WRITE,
+    NOP
 };
 
 class super_node;
+class tree;
 
 typedef pair<int, int> pint;
 class node
@@ -48,6 +51,10 @@ class node
         set<node*> cuts;
         super_node* wrap; // node wrapper
 
+        void update_reg();
+        void bypass(tree* get);
+        void push(tree* get);
+
         node(int _id, int _op);
         //void dbg();
         ~node();
@@ -57,6 +64,7 @@ class node
 class super_node
 {
     public: 
+        tree*  t;
         string id;
         int ss; // stack size
         int done; // done flag
@@ -78,16 +86,24 @@ class super_node
         ~super_node();
 };
 
-class super_cas
+class tree
 {
     public:
-        super_node* sc;
-        super_node* parent;
-        pair<super_node*, super_node*> child;
-        super_cas(super_node* _sc);
-        void connect(super_node* pa);
+        super_node* root;
+        super_node* prev;
+        super_node* early;
+        set<tree*> pres, sucs;
+        tree(super_node* _root, int _wb);
+        void dispatch();
+        vector<tree*> initialize();
+        void grow(super_node* sn);
+        void finalize();
+        void early_schedule();
+        int done;
+        int wb;
 };
 
+void build_tree(tree* tr, super_node* cur);
 typedef set<super_node*> sns;
 typedef set<node*> nds;
 typedef pair<node*, node*> ndp;
@@ -98,5 +114,8 @@ void connect(super_node* src, super_node* dst);
 void update_stack(super_node* target);
 int analyze_stack(super_node* target);
 void schedule(super_node* target);
+void schedule_cas(super_node* target);
+
+int allocate();
 
 #endif

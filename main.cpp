@@ -10,11 +10,12 @@ using namespace std;
 int gid = 0;
 int rcnt = 0; // cnt for temp result
 sns leaf; // global vec to store leaf super node
-sns root; // global vec to store leaf super node
+sns result; // global vec to store leaf super node
 sns cut;
 vector<node*> init_dfg(char* filename);
 void init_super_dfg(vector<node*> list);
 super_node* build_super(node* target);
+set<tree*> forest;
 
 
 
@@ -24,23 +25,40 @@ int main(int argc, char* argv[])
     vector<node*> list = init_dfg(argv[1]);
     init_super_dfg(list);
     
-    printf("overview: # of leaf = %d, root = %d\n", leaf.size(), root.size());
-    //vector<super_node*> test_leaf = get_partial_leaf(root);
+    printf("overview: # of leaf = %d, result = %d\n", leaf.size(), result.size());
 
+    for(it = result.begin(); it != result.end(); ++it)
+    {
+        tree* rt = new tree(*it, 1);
+        (*it)->t = rt;
+        printf("tree: tree %X with root %s\n", rt, (*it)->id.c_str());
+        printf("tree: tree pres = %d, sucs = %d\n", rt->pres.size(), rt->sucs.size());
+        forest.insert(rt);
+    }
+
+    set<tree*>::iterator tit;
+    for(tit = forest.begin(); tit != forest.end(); ++tit)
+    {
+        // find ready tree
+        if( (*tit)->pres.size() == 0) 
+        {
+            if((*tit)->done != 1)
+                (*tit)->dispatch();
+            printf("main dispatch\n");
+        }
+    }
+/*
     for(it = cut.begin(); it != cut.end(); ++it)
     {
         (*it)->cut();
     }
 
-    for(it = root.begin(); it != root.end(); ++it)
-    {
-        analyze_stack(*it);
-    }
 
-    for(it = root.begin(); it != root.end(); ++it)
+    for(it = result.begin(); it != result.end(); ++it)
     {
         schedule(*it);
     }
+*/
 
 
     return 0; 
@@ -121,7 +139,7 @@ void init_super_dfg(vector<node*> list)
     {
         if(list[i]->sucs.size() == 0)  // an end node
         {
-            root.insert(build_super(list[i]));
+            result.insert(build_super(list[i]));
         }
     }
 }

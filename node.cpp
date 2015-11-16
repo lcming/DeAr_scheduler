@@ -1,15 +1,225 @@
 
 #include "node.h"
-extern sns root;
+extern sns result;
 extern sns leaf;
 extern sns cut;
+extern set<tree*> forest;
 extern int rcnt;
-extern int tcnt;
 
-super_cas::super_cas(super_node* _sc)
+
+
+tree::tree(super_node* _root, int _wb)
 {
-    sc = _sc;
-    child.first = child.second = NULL;
+    root = _root;
+    wb  = _wb;
+    done = 0;
+    early = NULL;
+    if(root->pres.size() == 2)
+    {
+        super_node* n_left = *(root->pres.begin());
+        super_node* n_right = *(++root->pres.begin());
+        prev = root;
+        grow(n_left);
+        grow(n_right);
+    }
+    else if(root->pres.size() == 1)
+    {
+        prev = root;
+        super_node* n_left = *(root->pres.begin());
+        grow(n_left);
+    }
+}
+
+vector<tree*> tree::initialize()
+{
+    vector<tree*> t_ready;
+    node* result = root->cas[0];
+
+    // final result
+
+    set<tree*>::iterator it, it2;
+    for(it = sucs.begin(); it != sucs.end(); ++it)
+    {
+        if( (*it)->pres.size() == 1)
+        {
+            t_ready.push_back(*it);
+        }
+    }
+
+    // some tree need this tree wb
+    if(sucs.size() != t_ready.size())
+    {
+        result->rd = allocate();
+        result->update_reg();
+    }
+
+    if(t_ready.size() != 0)
+    {
+        result->ops = result->ops == POP?
+            WRITE : PUSH;
+        // fix rs for each ready tree 
+        for(int i = 0; i < t_ready.size(); i++)
+        {
+            if(t_ready[i]->done == 0)
+                result->push(t_ready[i]);
+        }
+        // the last ready suc have to pop the stack
+        t_ready.back()->root->cas[0]->ops = t_ready.back()->root->cas[0]->ops == PUSH ?
+            WRITE : POP;
+    }
+
+    // cut the dependency of all sucs
+    for(it = sucs.begin(); it != sucs.end(); ++it)
+    {
+        it2 = (*it)->pres.find(this);
+        (*it)->pres.erase(it2);
+    }
+
+    return t_ready;
+}
+
+void tree::early_schedule()
+{
+    if(early == NULL || early == root)
+        return;
+    assert(early->sucs.size() == 1);
+    super_node* par = *(early->sucs.begin());
+    super_node* left = *(par->pres.begin());
+    super_node* right = *(++par->pres.begin());
+    super_node* sib;
+
+    // find sib
+    if( left == early )
+        sib = right;
+    else if( right == early )
+        sib = left;
+    else
+    {
+        printf("fatal: handle early schedule not match\n");
+        exit(1);
+    }
+
+    early->cas[0]->ops = early->cas[0]->ops == POP?
+        WRITE: PUSH;
+    sib->cas[0]->ops = sib->cas[0]->ops == PUSH?
+        WRITE: POP;
+    if(par->cas.back()->pres.first == early->cas[0])
+    {
+        par->cas.back()->rs.first = STACK;
+        par->cas.back()->rs.second = sib->cas[0]->op;
+    }
+    else if(par->cas.back()->pres.first == sib->cas[0])
+    {
+        par->cas.back()->rs.second = STACK;
+        par->cas.back()->rs.first = sib->cas[0]->op;
+    }
+    else
+    {
+        printf("fatal: handle early schedule not match\n");
+        exit(1);
+    }
+    schedule_cas(early);
+}
+
+void tree::dispatch()
+{
+
+    // main part of scheduling
+    analyze_stack(root);
+    vector<tree*> t_ready = initialize();
+    early_schedule();
+    schedule(root);
+    done = 1;
+    for(int i = 0; i < t_ready.size(); i++)
+    {
+        t_ready[i]->dispatch();
+    }
+    if(sucs.size() == 0)
+        printf("RESULT\n");
+}
+
+void tree::grow(super_node* sn)
+{
+    printf("tree: on %s\n", sn->id.c_str());
+    if(sn->sucs.size() > 1 && sn->t == NULL)   // build a new tree
+    {
+        // create new tree and pass
+        tree* t_new = new tree(sn, 0);
+        sn->t = t_new;
+        forest.insert(t_new);
+        pres.insert(t_new);
+        t_new->sucs.insert(this);
+        sn->cut(prev);
+        printf("tree: tree %X with root %s\n", t_new, sn->id.c_str());
+        printf("tree: pres = %d, sucs = %d\n", t_new->pres.size(), t_new->sucs.size());
+    }
+    else if(sn->t != NULL) // connect tree
+    {
+        printf("tree: already a built tree\n");
+        pres.insert(sn->t);
+        sn->t->sucs.insert(this);
+        sn->cut(prev);
+    }
+    else
+    {
+        assert(sn->sucs.size() == 1);
+        super_node* par = *(sn->sucs.begin());
+        super_node* sib = *par->pres.begin() == sn ? 
+            *(++par->pres.begin()) : *par->pres.begin();
+        if(sib->t == NULL)
+        {
+            if(sib->sucs.size() > 1)        
+            {
+                tree* t_new = new tree(sn, 0);
+                sn->t = t_new;
+                forest.insert(t_new);
+                pres.insert(t_new);
+                t_new->sucs.insert(this);
+                sn->cut(prev);
+                printf("tree: tree %X with root %s\n", t_new, sn->id.c_str());
+                printf("tree: pres = %d, sucs = %d\n", t_new->pres.size(), t_new->sucs.size());
+            }
+            else
+            {
+                sn->t = this; 
+                if(sn->pres.size() == 2)
+                {
+                    super_node* n_left = *(sn->pres.begin());
+                    super_node* n_right = *(++sn->pres.begin());
+                    prev = sn;
+                    grow(n_left);
+                    grow(n_right);
+                }
+            }
+        }
+        else
+        {
+            if(sib->t != this)
+            {
+                tree* t_new = new tree(sn, 0);
+                sn->t = t_new;
+                forest.insert(t_new);
+                pres.insert(t_new);
+                t_new->sucs.insert(this);
+                sn->cut(prev);
+                printf("tree: tree %X with root %s\n", t_new, sn->id.c_str());
+                printf("tree: pres = %d, sucs = %d\n", t_new->pres.size(), t_new->sucs.size());
+            }
+            else
+            {
+                sn->t = this; 
+                if(sn->pres.size() == 2)
+                {
+                    super_node* n_left = *(sn->pres.begin());
+                    super_node* n_right = *(++sn->pres.begin());
+                    prev = sn;
+                    grow(n_left);
+                    grow(n_right);
+                }
+            }
+
+        }
+    }
 }
 
 node::node(int _id, int _op)
@@ -17,9 +227,10 @@ node::node(int _id, int _op)
     id = _id; 
     assert(_op >= ADD && _op <= SHI);
     op = _op;
+    ops = NOP;
     wrap = NULL;
     pres.first = pres.second = NULL;
-    rd = ops = rs.first = rs.second = -1;
+    rd = rs.first = rs.second = -1;
 }
 
 void connect(node* src, node* dst)
@@ -51,9 +262,11 @@ void connect(super_node* src, super_node* dst)
 
 super_node::super_node()
 {
+    t = NULL;
     ss = -1;
     done = 0;
     dest = -1;
+    //ops = NOP;
     assert(cas.size() == 0);
 }
 
@@ -72,6 +285,8 @@ void super_node::merge()
     sns::iterator it;
     super_node* target = *(sucs.begin());
     if(target->pres.size() > 1) // cannot merge
+        return;
+    if(t != NULL)
         return;
 
     printf("merge:[ %s] [ %s]\n", id.c_str(), target->id.c_str());
@@ -96,8 +311,8 @@ void super_node::merge()
     id = target->id + id;
     if(target->sucs.size() == 0) // a root to be merged
     {
-        root.erase(target);
-        root.insert(this);
+        result.erase(target);
+        result.insert(this);
     }
     delete target;
 }
@@ -117,6 +332,10 @@ int analyze_stack(super_node* target)
     }
     else if(psize == 2)
     {
+        // consider left or right is share node
+        // also consider both of them are share nodes
+        // we have to access 2 queue simultaneously
+        // maybe always schedule share node first is better
         it = target->pres.begin();
         int left = analyze_stack(*it);
         int right = analyze_stack(*(++it));
@@ -171,47 +390,10 @@ void super_node::cut() // split cut node
     merge();
 }
 
-void schedule(super_node* target)
+void schedule_cas(super_node* target)
 {
-    assert(target->pres.size() == 2 || target->pres.size() == 0);
-    if(target->pres.size() == 2)
-    {
-        sns::iterator it = target->pres.begin();
-        super_node* left = *it;
-        super_node* right = *(++it);
-
-        // set rs & rd for each op
-        // data only flow in SIU in this case
-        if(left->ss > right->ss)  // schedule larger stack first
-        {
-            left->cas.front()->ops = PUSH; // push
-            target->cas.back()->rs.first = PUSH;
-            schedule(left);
-
-            right->cas.front()->ops = POP; // pop
-            target->cas.back()->rs.second = right->cas.front()->op;
-            schedule(right); 
-        }
-        else
-        {
-            right->cas.front()->ops = PUSH; // push
-            target->cas.back()->rs.second = STACK;
-            schedule(right);
-
-            left->cas.front()->ops = POP; // pop
-            target->cas.back()->rs.first = left->cas.front()->op;
-            schedule(left); 
-        }
-        // todo: set rn, rs for target
-    }
-    else if (target->pres.size() == 0)
-    {
-        // a leaf node
-        assert(target->sucs.size() <= 1);
-        // we simplify register allocation, so assume rs are already determinded
-
-    }
-
+    assert(target->t != NULL);
+    target->done = 1;
     // schedule operations
     char* op_name;
     for(int i = target->cas.size()-1; i >= 0; i--)
@@ -230,40 +412,15 @@ void schedule(super_node* target)
                 exit(1);
         }
 
-        // allocate rd
-        if(n->cuts.size() > 0) // cut node must write back temp result
-        {
-            n->rd = rcnt;
-            nds::iterator it;
-            // update rs for each cut node
-            for(it = n->cuts.begin(); it != n->cuts.end(); ++it)
-            {
-                if( (*it)->pres.first == n ) 
-                {
-                    (*it)->rs.first = rcnt;
-                }
-                else if( (*it)->pres.second ==n )
-                {
-                    (*it)->rs.second = rcnt;
-                }
-                else
-                {
-                    printf("fatal: cut node not match\n");
-                    exit(1);
-                }
-            }
-            rcnt++;
-        }
-        else if(n->sucs.size() == 0) // final result
-        {
-            n->rd = rcnt;
-        }
-
         // allocate rs
-        if(n->pres.first == 0) // leaf
+        if(n->pres.first == NULL) // leaf
         {
-            n->rs.first = rcnt; 
-            n->rs.second = rcnt+1;
+            n->rs.first = allocate();
+            n->rs.second = allocate();
+        }
+        else if(n->pres.second == NULL)
+        {
+            n->rs.second = allocate(); 
         }
 
         // string that increase readability of assembly
@@ -290,29 +447,147 @@ void schedule(super_node* target)
 
         printf("schedule %*d: %s, %%%*d%s, %%%*d%s, %%%*d%s", 3, n->id, op_name, 2, n->rd, rd.c_str(), 2, n->rs.first, rs1.c_str(), 2, n->rs.second, rs2.c_str());
 
-        if(n->ops == PUSH)
-            printf(", PUSH");
-        else if(n->ops == POP)
-            printf(",  POP");
+        switch(n->ops)
+        {
+            case PUSH: 
+                printf(", PUSH");
+                break;
+            case POP: 
+                printf(", POP");
+                break;
+            case WRITE: 
+                printf(", WRITE");
+                break;
+            case NOP: 
+                printf(", NOP");
+                break;
+            default:
+                printf(", undefined stack operation\n");
+                exit(1);
+        } 
         printf("\n");
 
         // update the rs of the following node
         if(i > 0)
         {
             node* next = target->cas[i-1];
-            if(n == next->pres.first)
+            if(next->pres.first == n)
                 next->rs.first = n->op;
-            else if(n == next->pres.second)
+            else if(next->pres.second == n)
                 next->rs.second = n->op;
             else
             {
-                printf("fatal: scheduler doesn't match pre\n");
+                printf("fatal: node not match in itra tree bypass\n");
                 exit(1);
             }
         }
-            
+    }
+
+}
+
+void schedule(super_node* target)
+{
+    if(target->done == 1)
+        return;
+    assert(target->pres.size() == 2 || target->pres.size() == 0);
+    if(target->pres.size() == 2)
+    {
+        sns::iterator it = target->pres.begin();
+        super_node* left = *it;
+        super_node* right = *(++it);
         
+        // set rs & rd for each op
+        // data only flow in SIU in this case
+        if(left == target->t->early)
+        {
+            schedule(right);
+        }
+        else if(right == target->t->early)
+        {
+            schedule(left);
+        }
+        else if(left->ss > right->ss)  // schedule larger stack first
+        {
+            left->cas.front()->ops = left->cas.front()->ops == POP ?
+                WRITE : PUSH; // push
+            target->cas.back()->rs.first = STACK;
+            schedule(left);
+
+            right->cas.front()->ops = right->cas.front()->ops == PUSH?
+                WRITE : POP; // pop
+            target->cas.back()->rs.second = right->cas.front()->op;
+            schedule(right); 
+        }
+        else
+        {
+            right->cas.front()->ops = right->cas.front()->ops == POP ?
+                WRITE : PUSH; // push
+            target->cas.back()->rs.second = STACK;
+            schedule(right);
+
+            left->cas.front()->ops = left->cas.front()->ops == PUSH?
+                WRITE : POP; // pop
+            target->cas.back()->rs.first = left->cas.front()->op;
+            schedule(left); 
+        }
+    }
+    else if (target->pres.size() == 0)
+    {
+        assert(target->sucs.size() <= 1);
+    }
+    schedule_cas(target);
+}
+
+void node::update_reg()
+{
+    //assert(sucs.size() > 1);
+    set<node*>::iterator it;
+    for(it = sucs.begin(); it != sucs.end(); ++it)
+    {
+        if( (*it)->pres.first == this )
+            (*it)->rs.first = rd;
+        else if( (*it)->pres.second == this )
+            (*it)->rs.second = rd;
+        else
+        {
+            printf("fatal: not match when update_reg\n");
+            exit(1);
+        }
     }
 }
 
 
+void node::push(tree* get)
+{
+    set<node*>::iterator it;
+    for(it = sucs.begin(); it != sucs.end(); ++it)
+    {
+        // match push condition
+        if( (*it)->wrap->t == get ) 
+        {
+            if( (*it)->pres.first == this )
+                (*it)->rs.first = STACK;
+            else if( (*it)->pres.second == this)
+                (*it)->rs.second = STACK;
+            else
+            {
+                printf("fatal: not match when push\n");
+                exit(1);
+            }
+            get->early = (*it)->wrap;
+            break;
+        }
+    }
+}
+
+int allocate()
+{
+    int ret = rcnt;
+    rcnt++;
+    if(rcnt == RF_SIZE) 
+    {
+        printf("Ping Pong: refresh\n");
+        rcnt = 0; 
+    }
+    return ret;
+}
