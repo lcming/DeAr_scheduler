@@ -18,14 +18,14 @@ tree::tree(super_node* _root, int _wb)
         super_node* n_left = *(root->pres.begin());
         super_node* n_right = *(++root->pres.begin());
         prev = root;
-        grow(n_left);
-        grow(n_right);
+        grow(n_left, n_right->sucs.size());
+        grow(n_right, n_left->sucs.size());
     }
     else if(root->pres.size() == 1)
     {
         prev = root;
         super_node* n_left = *(root->pres.begin());
-        grow(n_left);
+        grow(n_left, -1);
     }
 }
 
@@ -63,7 +63,7 @@ vector<tree*> tree::initialize()
                 result->push(t_ready[i]);
         }
         // the last ready suc have to pop the stack
-        t_ready.back()->root->cas[0]->ops = t_ready.back()->root->cas[0]->ops == PUSH ?
+        t_ready.back()->root->cas.back()->ops = t_ready.back()->root->cas[0]->ops == PUSH ?
             WRITE : POP;
     }
 
@@ -107,6 +107,7 @@ void tree::early_schedule()
         par->cas.back()->rs.first = STACK;
         par->cas.back()->rs.second = sib->cas[0]->op;
     }
+
     else if(par->cas.back()->pres.first == sib->cas[0])
     {
         par->cas.back()->rs.second = STACK;
@@ -137,10 +138,21 @@ void tree::dispatch()
         printf("RESULT\n");
 }
 
-void tree::grow(super_node* sn)
+void tree::grow(super_node* sn, int sib_sucs)
 {
     printf("tree: on %s\n", sn->id.c_str());
-    if(sn->sucs.size() > 1 && sn->t == NULL)   // build a new tree
+    if
+    (
+        (
+            sn->sucs.size() > 1 ||
+            (
+                sn->sucs.size() == 1 &&  
+                //sib_sucs == -1
+                (*sn->sucs.begin())->pres.size() == 1
+            )            
+        )
+        && sn->t == NULL
+    )   // build a new tree
     {
         // create new tree and pass
         tree* t_new = new tree(sn, 0);
@@ -166,7 +178,7 @@ void tree::grow(super_node* sn)
             *(++par->pres.begin()) : *par->pres.begin();
         if(sib->t == NULL)
         {
-            if(sib->sucs.size() > 1)        
+            if(sib_sucs > 1)        
             {
                 tree* t_new = new tree(sn, 0);
                 sn->t = t_new;
@@ -185,8 +197,14 @@ void tree::grow(super_node* sn)
                     super_node* n_left = *(sn->pres.begin());
                     super_node* n_right = *(++sn->pres.begin());
                     prev = sn;
-                    grow(n_left);
-                    grow(n_right);
+                    grow(n_left, n_right->sucs.size());
+                    grow(n_right, n_left->sucs.size());
+                }
+                else if(sn->pres.size() == 1)
+                {
+                    super_node* n_left = *(sn->pres.begin());
+                    prev = sn;
+                    grow(n_left, -1);
                 }
             }
         }
@@ -211,8 +229,8 @@ void tree::grow(super_node* sn)
                     super_node* n_left = *(sn->pres.begin());
                     super_node* n_right = *(++sn->pres.begin());
                     prev = sn;
-                    grow(n_left);
-                    grow(n_right);
+                    grow(n_left, n_right->sucs.size());
+                    grow(n_right, n_left->sucs.size());
                 }
             }
 
@@ -277,43 +295,6 @@ void super_node::add_node(node* n)
     printf("%d ", n->id);
 }
 
-void super_node::merge()
-{
-    assert(sucs.size() == 1);
-    sns::iterator it;
-    super_node* target = *(sucs.begin());
-    if(target->pres.size() > 1) // cannot merge
-        return;
-    if(t != NULL)
-        return;
-
-    printf("merge:[ %s] [ %s]\n", id.c_str(), target->id.c_str());
-    sucs.clear();
-
-    // iterate all sucs of mergee
-    for(it = target->sucs.begin(); it != target->sucs.end(); ++it)
-    {
-        // inherit sucs of mergee
-        sucs.insert(*it);
-        // replace the mergee by the merger
-        (*it)->pres.erase(target); 
-        (*it)->pres.insert(this);
-    }
-    // concat cas
-    for(int i = 0; i < cas.size(); i++)
-    {
-        target->cas.push_back(cas[i]);
-    }
-    cas = target->cas;
-    // concat id
-    id = target->id + id;
-    if(target->sucs.size() == 0) // a root to be merged
-    {
-        result.erase(target);
-        result.insert(this);
-    }
-    delete target;
-}
 super_node::~super_node()
 {
 
@@ -342,6 +323,7 @@ int tree::analyze_stack(super_node* target)
     else 
     {
         printf("fatal: [ %s] error psize %d\n", target->id.c_str(), psize);
+        exit(1);
     }
     printf("stack: size of [ %s] is %d\n", target->id.c_str(), target->ss);
     return target->ss;
@@ -356,36 +338,6 @@ void super_node::cut(super_node* target)
 
     sucs.erase(target);
     target->pres.erase(this);
-
-    super_node* merger = *(target->pres.begin());
-    if(target->pres.size() == 1 && merger->sucs.size() == 1)
-        merger->merge();
-}
-
-void super_node::cut() // split cut node
-{
-    sns::iterator it;
-    int maxlv = 0;
-    int id = -1;
-    super_node* mergee;
-
-    // find the max level
-    for(it = sucs.begin(); it != sucs.end(); ++it)
-    {
-        if( (*it)->level > maxlv || ( (*it)->level == maxlv && (*it)->cas[0]->id > id) ) 
-        {
-            maxlv = (*it)->level;
-            mergee = *it;
-            id = mergee->cas[0]->id;
-        }
-    }
-
-    for(it = sucs.begin(); it != sucs.end(); ++it)
-    {
-        if(*it != mergee)  
-            cut(*it); // specify target to cut
-    }
-    merge();
 }
 
 void super_node::schedule()

@@ -78,7 +78,6 @@ class super_node
 
 
         super_node();
-        void merge();
         void cut();
         void cut(super_node* target);
         void add_node(node* n);
@@ -101,7 +100,7 @@ class tree
         void dispatch();
         vector<tree*> initialize();
         int analyze_stack(super_node* target);
-        void grow(super_node* sn);
+        void grow(super_node* sn, int sib_sucs);
         void early_schedule();
         int done;
         int wb;
