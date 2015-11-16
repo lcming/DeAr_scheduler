@@ -2,7 +2,6 @@
 #include "node.h"
 extern sns result;
 extern sns leaf;
-extern sns cut;
 extern set<tree*> forest;
 extern int rcnt;
 
