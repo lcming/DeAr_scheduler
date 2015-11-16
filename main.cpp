@@ -47,18 +47,6 @@ int main(int argc, char* argv[])
             printf("main dispatch\n");
         }
     }
-/*
-    for(it = cut.begin(); it != cut.end(); ++it)
-    {
-        (*it)->cut();
-    }
-
-
-    for(it = result.begin(); it != result.end(); ++it)
-    {
-        schedule(*it);
-    }
-*/
 
 
     return 0; 
@@ -100,7 +88,7 @@ super_node* build_super(node* target)
         }
         // connect
         printf("regress: super [ %s] connect to [ %s]\n", super_pre->id.c_str(), super->id.c_str());
-        connect(target->pres.first->wrap, super);
+        target->pres.first->wrap->connect(super);
         if(super_pre->level > level)
             level = super_pre->level;
 
@@ -121,7 +109,7 @@ super_node* build_super(node* target)
         }
         // connect
         printf("regress: super [ %s] connect to [ %s]\n", super_pre->id.c_str(), super->id.c_str());
-        connect(target->pres.second->wrap, super);
+        target->pres.second->wrap->connect(super);
         if(super_pre->level > level)
             level = super_pre->level;
 
@@ -175,7 +163,7 @@ vector<node*> init_dfg(char* filename)
     // interconnect
     int src, dst;
     while(fin >> src >> dst)
-        connect(list[src], list[dst]);
+        list[src]->connect(list[dst]);
 
 
     return list;

@@ -53,6 +53,7 @@ class node
 
         void update_reg();
         void bypass(tree* get);
+        void connect(node* dst);
         void push(tree* get);
 
         node(int _id, int _op);
@@ -81,6 +82,9 @@ class super_node
         void cut();
         void cut(super_node* target);
         void add_node(node* n);
+        void connect(super_node* dst);
+        void rec_schedule();
+        void schedule();
         //void dbg();
 
         ~super_node();
@@ -96,25 +100,18 @@ class tree
         tree(super_node* _root, int _wb);
         void dispatch();
         vector<tree*> initialize();
+        int analyze_stack(super_node* target);
         void grow(super_node* sn);
-        void finalize();
         void early_schedule();
         int done;
         int wb;
 };
 
-void build_tree(tree* tr, super_node* cur);
 typedef set<super_node*> sns;
 typedef set<node*> nds;
 typedef pair<node*, node*> ndp;
 typedef pair<super_node*, super_node*> snp;
 
-void connect(node* src, node* dst);
-void connect(super_node* src, super_node* dst);
-void update_stack(super_node* target);
-int analyze_stack(super_node* target);
-void schedule(super_node* target);
-void schedule_cas(super_node* target);
 
 int allocate();
 
