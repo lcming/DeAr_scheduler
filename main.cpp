@@ -30,7 +30,6 @@ int main(int argc, char* argv[])
         tree* rt = build_tree(*it);
         (*it)->t = rt;
         printf("tree: tree pres = %d, sucs = %d\n", rt->pres.size(), rt->sucs.size());
-        forest.insert(rt);
     }
 
     set<tree*>::iterator tit;

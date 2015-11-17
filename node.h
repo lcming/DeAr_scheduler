@@ -99,7 +99,6 @@ class tree
         void dispatch();
         vector<tree*> initialize();
         int analyze_stack(super_node* target);
-        void grow(super_node* sn, int sib_sucs);
         void extend(super_node* sn);
         void early_schedule();
         void connect(tree* target);
