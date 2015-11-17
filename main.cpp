@@ -26,9 +26,9 @@ int main(int argc, char* argv[])
 
     for(it = result.begin(); it != result.end(); ++it)
     {
-        tree* rt = new tree(*it, 1);
+        //tree* rt = new tree(*it, 1);
+        tree* rt = build_tree(*it);
         (*it)->t = rt;
-        printf("tree: tree %X with root %s\n", rt, (*it)->id.c_str());
         printf("tree: tree pres = %d, sucs = %d\n", rt->pres.size(), rt->sucs.size());
         forest.insert(rt);
     }

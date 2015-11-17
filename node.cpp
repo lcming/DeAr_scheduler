@@ -13,20 +13,93 @@ tree::tree(super_node* _root, int _wb)
     wb  = _wb;
     done = 0;
     early = NULL;
-    if(root->pres.size() == 2)
+    root->t = this; 
+}
+
+tree* build_tree(super_node* sn)
+{
+    tree* t_new = new tree(sn, 1);
+    forest.insert(t_new);
+    printf("tree: tree %X with root %s\n", t_new, sn->id.c_str());
+    if(sn->pres.size() == 2)
     {
-        super_node* n_left = *(root->pres.begin());
-        super_node* n_right = *(++root->pres.begin());
-        prev = root;
-        grow(n_left, n_right->sucs.size());
-        grow(n_right, n_left->sucs.size());
+        super_node* left = *(sn->pres.begin());
+        super_node* right = *(++sn->pres.begin());
+        if
+        (
+            left->sucs.size() == 1 && 
+            right->sucs.size() == 1 &&
+            !left->t  && 
+            !right->t
+        )
+        {
+            t_new->extend(left);
+            t_new->extend(right);
+        }
+        else
+        {
+            tree* t_left = left->t? left->t : build_tree(left);
+            tree* t_right = right->t? right->t : build_tree(right);
+            t_left->connect(t_new);
+            t_right->connect(t_new);
+            left->cut(sn);
+            right->cut(sn);
+        }
     }
-    else if(root->pres.size() == 1)
+    else if(sn->pres.size() == 1)
     {
-        prev = root;
-        super_node* n_left = *(root->pres.begin());
-        grow(n_left, -1);
+        super_node* left = *(sn->pres.begin());
+        tree* t_left = left->t? left->t : build_tree(left);
+        t_left->connect(t_new);
+        left->cut(sn);
     }
+    
+    return t_new;
+}
+
+void tree::extend(super_node* sn)
+{
+    sn->t = this;
+    printf("tree: on %s\n", sn->id.c_str());
+    if(sn->pres.size() == 2)
+    {
+        super_node* left = *(sn->pres.begin());
+        super_node* right = *(++sn->pres.begin());
+        if
+        (
+            left->sucs.size() == 1 && 
+            right->sucs.size() == 1 &&
+            !left->t && 
+            !right->t
+        )
+        {
+            this->extend(left);
+            this->extend(right);
+        }
+        else
+        {
+            tree* t_left = left->t? left->t : build_tree(left);
+            tree* t_right = right->t? right->t : build_tree(right);
+            t_left->connect(this);
+            t_right->connect(this);
+            left->cut(sn);
+            right->cut(sn);
+        }
+    }
+    else if(sn->pres.size() == 1)
+    {
+        super_node* left = *(sn->pres.begin());
+        tree* t_left = left->t? left->t : build_tree(left);
+        t_left->connect(this);
+        left->cut(sn);
+    }
+ 
+}
+
+void tree::connect(tree* target)
+{
+    this->sucs.insert(target);
+    target->pres.insert(this);
 }
 
 vector<tree*> tree::initialize()
@@ -79,7 +152,7 @@ vector<tree*> tree::initialize()
 
 void tree::early_schedule()
 {
-    if(early == NULL || early == root)
+    if(!early || early == root)
         return;
     assert(early->sucs.size() == 1);
     super_node* par = *(early->sucs.begin());
@@ -138,105 +211,6 @@ void tree::dispatch()
         printf("RESULT\n");
 }
 
-void tree::grow(super_node* sn, int sib_sucs)
-{
-    printf("tree: on %s\n", sn->id.c_str());
-    if
-    (
-        (
-            sn->sucs.size() > 1 ||
-            (
-                sn->sucs.size() == 1 &&  
-                //sib_sucs == -1
-                (*sn->sucs.begin())->pres.size() == 1
-            )            
-        )
-        && sn->t == NULL
-    )   // build a new tree
-    {
-        // create new tree and pass
-        tree* t_new = new tree(sn, 0);
-        sn->t = t_new;
-        forest.insert(t_new);
-        pres.insert(t_new);
-        t_new->sucs.insert(this);
-        sn->cut(prev);
-        printf("tree: tree %X with root %s\n", t_new, sn->id.c_str());
-        printf("tree: pres = %d, sucs = %d\n", t_new->pres.size(), t_new->sucs.size());
-    }
-    else if(sn->t != NULL) // connect tree
-    {
-        printf("tree: already a built tree\n");
-        pres.insert(sn->t);
-        sn->t->sucs.insert(this);
-        sn->cut(prev);
-    }
-    else
-    {
-        super_node* par = *(sn->sucs.begin());
-        super_node* sib = *par->pres.begin() == sn ? 
-            *(++par->pres.begin()) : *par->pres.begin();
-        if(sib->t == NULL)
-        {
-            if(sib_sucs > 1)        
-            {
-                tree* t_new = new tree(sn, 0);
-                sn->t = t_new;
-                forest.insert(t_new);
-                pres.insert(t_new);
-                t_new->sucs.insert(this);
-                sn->cut(prev);
-                printf("tree: tree %X with root %s\n", t_new, sn->id.c_str());
-                printf("tree: pres = %d, sucs = %d\n", t_new->pres.size(), t_new->sucs.size());
-            }
-            else
-            {
-                sn->t = this; 
-                if(sn->pres.size() == 2)
-                {
-                    super_node* n_left = *(sn->pres.begin());
-                    super_node* n_right = *(++sn->pres.begin());
-                    prev = sn;
-                    grow(n_left, n_right->sucs.size());
-                    grow(n_right, n_left->sucs.size());
-                }
-                else if(sn->pres.size() == 1)
-                {
-                    super_node* n_left = *(sn->pres.begin());
-                    prev = sn;
-                    grow(n_left, -1);
-                }
-            }
-        }
-        else
-        {
-            if(sib->t != this)
-            {
-                tree* t_new = new tree(sn, 0);
-                sn->t = t_new;
-                forest.insert(t_new);
-                pres.insert(t_new);
-                t_new->sucs.insert(this);
-                sn->cut(prev);
-                printf("tree: tree %X with root %s\n", t_new, sn->id.c_str());
-                printf("tree: pres = %d, sucs = %d\n", t_new->pres.size(), t_new->sucs.size());
-            }
-            else
-            {
-                sn->t = this; 
-                if(sn->pres.size() == 2)
-                {
-                    super_node* n_left = *(sn->pres.begin());
-                    super_node* n_right = *(++sn->pres.begin());
-                    prev = sn;
-                    grow(n_left, n_right->sucs.size());
-                    grow(n_right, n_left->sucs.size());
-                }
-            }
-
-        }
-    }
-}
 
 node::node(int _id, int _op)
 {
@@ -257,9 +231,9 @@ void node::connect(node* dst)
     // To avoid reversing to operands, 
     // we must know which pre comes first
     //===================================
-    if(dst->pres.first == NULL) // not used yet
+    if(!dst->pres.first) // not used yet
         dst->pres.first = this;
-    else if(dst->pres.second == NULL)
+    else if(!dst->pres.second)
     {
         dst->pres.second = this;
         assert(dst->pres.first != dst->pres.second);
@@ -342,7 +316,7 @@ void super_node::cut(super_node* target)
 
 void super_node::schedule()
 {
-    assert(this->t != NULL);
+    assert(this->t);
     this->done = 1;
     // schedule operations
     char* op_name;
@@ -363,12 +337,12 @@ void super_node::schedule()
         }
 
         // allocate rs
-        if(n->pres.first == NULL) // leaf
+        if(!n->pres.first) // leaf
         {
             n->rs.first = allocate();
             n->rs.second = allocate();
         }
-        else if(n->pres.second == NULL)
+        else if(!n->pres.second)
         {
             n->rs.second = allocate(); 
         }
