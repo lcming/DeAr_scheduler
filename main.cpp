@@ -1,4 +1,5 @@
 #include "node.h"
+#include "arbiter.h"
 #include "dfg.h"
 #include <fstream>
 #include <vector>
@@ -13,6 +14,11 @@ int rcnt = 0; // cnt for temp result
 sns leaf; // global vec to store leaf super node
 sns result; // global vec to store leaf super node
 set<tree*> forest;
+set<node*> nodes;
+set<super_node*> super_nodes;
+node* start = NULL;
+node* previous = NULL;
+set<ptree> restore_tree;
 
 
 
@@ -32,17 +38,29 @@ int main(int argc, char* argv[])
         printf("tree: tree pres = %d, sucs = %d\n", rt->pres.size(), rt->sucs.size());
     }
 
+    for(int i = 0; i < 10; i++)
+    {
+        test_single_thread(0);
+        reset_dfg();
+    }
+    test_single_thread(1);
+    reset_dfg();
+/*
     set<tree*>::iterator tit;
+    set<run*> run_pool;
     for(tit = forest.begin(); tit != forest.end(); ++tit)
     {
-        // find ready tree
         if( (*tit)->pres.size() == 0) 
         {
-            if((*tit)->done != 1)
-                (*tit)->dispatch();
-            printf("main dispatch\n");
+            run_pool.insert(new run((*tit)));
         }
+       
     }
+    printf("run: pool size = %d\n", run_pool.size());
+    (*run_pool.begin())->initialize();
+    (*(++run_pool.begin()))->initialize();
+    */
+
 
     return 0; 
 }

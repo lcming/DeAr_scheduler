@@ -37,9 +37,11 @@ class super_node;
 class tree;
 
 typedef pair<int, int> pint;
+typedef pair<tree*, tree*> ptree;
 class node
 {
     public:
+        node* next;
         int id;
         int op;
         int ops; // stack operation
@@ -55,6 +57,8 @@ class node
         void bypass(tree* get);
         void connect(node* dst);
         void push(tree* get);
+        void reset();
+        void process(int show);
 
         node(int _id, int _op);
         //void dbg();
@@ -92,7 +96,6 @@ class tree
 {
     public:
         super_node* root;
-        super_node* prev;
         super_node* early;
         set<tree*> pres, sucs;
         tree(super_node* _root, int _wb);

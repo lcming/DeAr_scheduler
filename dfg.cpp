@@ -3,12 +3,20 @@ extern sns result;
 extern sns leaf;
 extern set<tree*> forest;
 extern int rcnt;
+extern set<node*> nodes;
+extern set<super_node*> super_nodes;
+extern node* start;
+extern set<ptree> restore_tree;
+extern int rcnt;
+extern node* start;
+extern node* previous;
 
 
 super_node* build_super(node* target)
 {
     printf("regress: build cas:");
     super_node* super = new super_node;
+    super_nodes.insert(super);
     super->add_node(target);
 
     // search until encounter a node with non-one pre, which implies the end of the super node
@@ -105,6 +113,7 @@ vector<node*> init_dfg(char* filename)
         }
         //op_id += 4; // important: to make rf allocation more intuitive
         list[id] = new node(id, op_id);
+        nodes.insert(list[id]);
     }
 
     // interconnect
@@ -115,4 +124,48 @@ vector<node*> init_dfg(char* filename)
 
     return list;
 }
+
+void test_single_thread(int show)
+{
+
+    set<tree*>::iterator tit;
+    for(tit = forest.begin(); tit != forest.end(); ++tit)
+    {
+        // find ready tree
+        if( (*tit)->pres.size() == 0) 
+        {
+            if((*tit)->done != 1)
+            {
+                (*tit)->dispatch();
+            }
+        }
+    }
+
+    node* n = start;
+    while(n)
+    {
+        n->process(show);
+        n->reset();
+
+        // reset node chain
+        node* prev = n;
+        n = n->next;
+        prev->next = NULL;
+    }
+}
+
+void reset_dfg()
+{
+    rcnt = 0;
+    start = NULL;
+    previous = NULL;
+    set<ptree>::iterator it;
+    for(it = restore_tree.begin(); it != restore_tree.end(); ++it)
+    {
+        (*it).first->pres.insert((*it).second);
+    }
+}
+
+
+
 

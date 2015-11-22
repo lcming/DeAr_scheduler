@@ -4,7 +4,9 @@ extern sns result;
 extern sns leaf;
 extern set<tree*> forest;
 extern int rcnt;
-
+extern node* start;
+extern node* previous;
+extern set<ptree> restore_tree;
 
 
 tree::tree(super_node* _root, int _wb)
@@ -145,6 +147,13 @@ vector<tree*> tree::initialize()
     {
         it2 = (*it)->pres.find(this);
         (*it)->pres.erase(it2);
+
+        // backup, so we can restore the scheduling
+        ptree backup;
+        backup.first = *it;
+        backup.second = *it2;
+        restore_tree.insert(backup);
+
     }
 
     return t_ready;
@@ -175,6 +184,7 @@ void tree::early_schedule()
         WRITE: PUSH;
     sib->cas[0]->ops = sib->cas[0]->ops == PUSH?
         WRITE: POP;
+
     if(par->cas.back()->pres.first == early->cas[0])
     {
         par->cas.back()->rs.first = STACK;
@@ -219,6 +229,7 @@ node::node(int _id, int _op)
     op = _op;
     ops = NOP;
     wrap = NULL;
+    next = NULL;
     pres.first = pres.second = NULL;
     rd = rs.first = rs.second = -1;
 }
@@ -255,7 +266,6 @@ super_node::super_node()
     t = NULL;
     ss = -1;
     done = 0;
-    dest = -1;
     //ops = NOP;
     assert(cas.size() == 0);
 }
@@ -316,25 +326,20 @@ void super_node::cut(super_node* target)
 
 void super_node::schedule()
 {
+    if(this->done)
+        return;
     assert(this->t);
-    this->done = 1;
+
     // schedule operations
-    char* op_name;
     for(int i = this->cas.size()-1; i >= 0; i--)
     {
         node* n = this->cas[i];
-        switch(n->op)
-        {
-            case ADD:
-                op_name = "add"; break;
-            case MUL:
-                op_name = "mul"; break;
-            case SHI:
-                op_name = "shi"; break;
-            default:
-                printf("fatal: no such type of op code %d\n", n->op);
-                exit(1);
-        }
+
+        // marked as the first node or record the next node
+        if(!start)
+            start = n;
+        else
+            previous->next = n;
 
         // allocate rs
         if(!n->pres.first) // leaf
@@ -347,50 +352,12 @@ void super_node::schedule()
             n->rs.second = allocate(); 
         }
 
-        // string that increase readability of assembly
-        string rd, rs1, rs2;
-#ifdef READABLE
-        if(n->rd == -1)
-            rd = "(no WB)";
-        switch(n->rs.first)
+        // the node W/O sucs is the final result
+        if(n->sucs.size() == 0)
         {
-            case ADD:   rs1 = "(ADD)";    break;
-            case MUL:   rs1 = "(MUL)";    break;
-            case SHI:   rs1 = "(SHI)";    break;
-            case STACK: rs1 = "(STACK)";  break;
+            n->rd = allocate(); 
         }
-        switch(n->rs.second)
-        {
-            case ADD:   rs2 = "(ADD)";    break;
-            case MUL:   rs2 = "(MUL)";    break;
-            case SHI:   rs2 = "(SHI)";    break;
-            case STACK: rs2 = "(STACK)";  break;
-        }   
-#endif
-
-
-        printf("schedule %*d: %s, %%%*d%s, %%%*d%s, %%%*d%s", 3, n->id, op_name, 2, n->rd, rd.c_str(), 2, n->rs.first, rs1.c_str(), 2, n->rs.second, rs2.c_str());
-
-        switch(n->ops)
-        {
-            case PUSH: 
-                printf(", PUSH");
-                break;
-            case POP: 
-                printf(", POP");
-                break;
-            case WRITE: 
-                printf(", WRITE");
-                break;
-            case NOP: 
-                printf(", NOP");
-                break;
-            default:
-                printf(", undefined stack operation\n");
-                exit(1);
-        } 
-        printf("\n");
-
+            
         // update the rs of the following node
         if(i > 0)
         {
@@ -405,7 +372,9 @@ void super_node::schedule()
                 exit(1);
             }
         }
+        previous = n;
     }
+    this->done = 1;
 
 }
 
@@ -515,3 +484,79 @@ int allocate()
     }
     return ret;
 }
+
+
+void node::reset()
+{
+    node* n = this;
+    super_node* reset_sn = n->wrap;
+    reset_sn->done = 0;
+    reset_sn->ss = -1;
+
+    tree* reset_tree = reset_sn->t;
+    reset_tree->done = 0;
+
+    n->ops = NOP;
+    n->rd = n->rs.first = n->rs.second = -1;
+}
+
+void node::process(int show)
+{
+    node* n = this;
+    string op_name, rd, rs1, rs2, ops;
+    // set op name
+    switch(n->op)
+    {
+        case ADD:
+            op_name = "add"; break;
+        case MUL:
+            op_name = "mul"; break;
+        case SHI:
+            op_name = "shi"; break;
+        default:
+            printf("fatal: no such type of op code %d\n", n->op);
+            exit(1);
+    }
+    // set rd, rs
+    if(n->rd == -1)
+        rd = "(no WB)";
+
+    switch(n->rs.first)
+    {
+        case ADD:   rs1 = "(ADD)";    break;
+        case MUL:   rs1 = "(MUL)";    break;
+        case SHI:   rs1 = "(SHI)";    break;
+        case STACK: rs1 = "(STACK)";  break;
+    }
+    switch(n->rs.second)
+    {
+        case ADD:   rs2 = "(ADD)";    break;
+        case MUL:   rs2 = "(MUL)";    break;
+        case SHI:   rs2 = "(SHI)";    break;
+        case STACK: rs2 = "(STACK)";  break;
+    }   
+
+    switch(n->ops)
+    {
+        case PUSH: 
+            ops = "PUSH";
+            break;
+        case POP: 
+            ops = "POP";
+            break;
+        case WRITE:
+            ops = "WRITE";
+            break;
+        case NOP: 
+            ops = "NOP";
+            break;
+        default:
+            printf(", undefined stack operation\n");
+            exit(1);
+    } 
+
+    if(show)
+            printf("schedule %*d: %s, %%%*d%s, %%%*d%s, %%%*d%s, %s\n", 3, n->id, op_name.c_str(), 2, n->rd, rd.c_str(), 2, n->rs.first, rs1.c_str(), 2, n->rs.second, rs2.c_str(), ops.c_str());
+}
+
+
