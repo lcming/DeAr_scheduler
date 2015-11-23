@@ -85,8 +85,8 @@ class super_node
         void cut(super_node* target);
         void add_node(node* n);
         void connect(super_node* dst);
-        void rec_schedule();
-        void schedule();
+        void rec_schedule(vector<node*>& ret);
+        void schedule(vector<node*>& ret);
         //void dbg();
 
         ~super_node();
@@ -99,11 +99,11 @@ class tree
         super_node* early;
         set<tree*> pres, sucs;
         tree(super_node* _root, int _wb);
-        void dispatch();
+        vector<node*> dispatch();
         vector<tree*> initialize();
         int analyze_stack(super_node* target);
         void extend(super_node* sn);
-        void early_schedule();
+        void early_schedule(vector<node*>& ret);
         void connect(tree* target);
         int done;
         int wb;

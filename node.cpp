@@ -159,7 +159,7 @@ vector<tree*> tree::initialize()
     return t_ready;
 }
 
-void tree::early_schedule()
+void tree::early_schedule(vector<node*>& ret)
 {
     if(!early || early == root)
         return;
@@ -201,24 +201,26 @@ void tree::early_schedule()
         printf("fatal: handle early schedule not match\n");
         exit(1);
     }
-    early->schedule();
+    early->schedule(ret);
 }
 
-void tree::dispatch()
+vector<node*> tree::dispatch()
 {
-
+    vector<node*> ret;
     // main part of scheduling
     analyze_stack(root);
     vector<tree*> t_ready = initialize();
-    early_schedule();
-    root->rec_schedule();
+    early_schedule(ret);
+    root->rec_schedule(ret);
     done = 1;
     for(int i = 0; i < t_ready.size(); i++)
     {
-        t_ready[i]->dispatch();
+        vector<node*> _ret = t_ready[i]->dispatch();
+        ret.insert(ret.end(), _ret.begin(), _ret.end());
     }
     if(sucs.size() == 0)
         printf("RESULT\n");
+    return ret;
 }
 
 
@@ -324,7 +326,7 @@ void super_node::cut(super_node* target)
     target->pres.erase(this);
 }
 
-void super_node::schedule()
+void super_node::schedule(vector<node*>& ret)
 {
     if(this->done)
         return;
@@ -372,13 +374,14 @@ void super_node::schedule()
                 exit(1);
             }
         }
+        ret.push_back(n);
         previous = n;
     }
     this->done = 1;
 
 }
 
-void super_node::rec_schedule()
+void super_node::rec_schedule(vector<node*>& ret)
 {
     if(this->done == 1)
         return;
@@ -393,42 +396,42 @@ void super_node::rec_schedule()
         // data only flow in SIU in this case
         if(left == this->t->early)
         {
-            right->rec_schedule();
+            right->rec_schedule(ret);
         }
         else if(right == this->t->early)
         {
-            left->rec_schedule();
+            left->rec_schedule(ret);
         }
         else if(left->ss > right->ss)  // rec_schedule() larger stack first
         {
             left->cas.front()->ops = left->cas.front()->ops == POP ?
                 WRITE : PUSH; // push
             this->cas.back()->rs.first = STACK;
-            left->rec_schedule();
+            left->rec_schedule(ret);
 
             right->cas.front()->ops = right->cas.front()->ops == PUSH?
                 WRITE : POP; // pop
             this->cas.back()->rs.second = right->cas.front()->op;
-            right->rec_schedule(); 
+            right->rec_schedule(ret); 
         }
         else
         {
             right->cas.front()->ops = right->cas.front()->ops == POP ?
                 WRITE : PUSH; // push
             this->cas.back()->rs.second = STACK;
-            right->rec_schedule();
+            right->rec_schedule(ret);
 
             left->cas.front()->ops = left->cas.front()->ops == PUSH?
                 WRITE : POP; // pop
             this->cas.back()->rs.first = left->cas.front()->op;
-            left->rec_schedule(); 
+            left->rec_schedule(ret); 
         }
     }
     else if (this->pres.size() == 0)
     {
         assert(this->sucs.size() <= 1);
     }
-    this->schedule();
+    this->schedule(ret);
 }
 
 void node::update_reg()

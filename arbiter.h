@@ -27,6 +27,7 @@ class run
         void initialize();
         void finalize(int show);
         void receive(tree* merge);
+        void dispatch_ready(int show);
 };
 
 void dy_pgm(run* first, run* second);

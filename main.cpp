@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
         (*it)->t = rt;
         printf("tree: tree pres = %d, sucs = %d\n", rt->pres.size(), rt->sucs.size());
     }
-
+/*
     for(int i = 0; i < 10; i++)
     {
         test_single_thread(0);
@@ -45,21 +45,28 @@ int main(int argc, char* argv[])
     }
     test_single_thread(1);
     reset_dfg();
-/*
+    */
     set<tree*>::iterator tit;
     set<run*> run_pool;
     for(tit = forest.begin(); tit != forest.end(); ++tit)
     {
-        if( (*tit)->pres.size() == 0) 
+        if( (*tit)->pres.size() == 0 && (*tit)->done != 1) 
         {
-            run_pool.insert(new run((*tit)));
+            run* input = new run(*tit);
+            run_pool.insert(input);
         }
-       
+        reset_dfg();
     }
-    printf("run: pool size = %d\n", run_pool.size());
-    (*run_pool.begin())->initialize();
-    (*(++run_pool.begin()))->initialize();
-    */
+
+    set<run*>::iterator rit;
+    for(rit = run_pool.begin(); rit != run_pool.end(); ++rit)
+    {
+        printf("run: ");
+        (*rit)->dispatch_ready(1);
+    }
+
+
+
 
 
     return 0; 

@@ -2,6 +2,7 @@
 extern sns result;
 extern sns leaf;
 extern set<tree*> forest;
+extern set<node*> nodes;
 extern int rcnt;
 extern set<node*> nodes;
 extern set<super_node*> super_nodes;
@@ -136,11 +137,16 @@ void test_single_thread(int show)
         {
             if((*tit)->done != 1)
             {
-                (*tit)->dispatch();
+                vector<node*> run;
+                run = (*tit)->dispatch();
+                for(int i = 0; i < run.size(); i++)
+                {
+                    run[i]->process(show);
+                }
             }
         }
     }
-
+/*
     node* n = start;
     while(n)
     {
@@ -152,17 +158,22 @@ void test_single_thread(int show)
         n = n->next;
         prev->next = NULL;
     }
+    */
 }
 
 void reset_dfg()
 {
     rcnt = 0;
-    start = NULL;
-    previous = NULL;
     set<ptree>::iterator it;
     for(it = restore_tree.begin(); it != restore_tree.end(); ++it)
     {
         (*it).first->pres.insert((*it).second);
+    }
+
+    set<node*>::iterator it2;
+    for(it2 = nodes.begin(); it2 != nodes.end(); ++it2)
+    {
+        (*it2)->reset();
     }
 }
 

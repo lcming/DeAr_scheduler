@@ -6,6 +6,15 @@ extern node* start;
 run::run(tree* free)
 {
     source = free; 
+    ready = source->dispatch();
+    printf("run: ready size = %d\n", ready.size());
+}
+
+
+void run::dispatch_ready(int show)
+{
+    for(int i = 0; i < ready.size(); i++)
+        ready[i]->process(show);
 }
 
 void run::finalize(int show)
@@ -13,23 +22,3 @@ void run::finalize(int show)
 
 }
 
-void run::initialize()
-{
-    source->dispatch(); 
-    node* n = start;
-    while(n)
-    {
-        n->process(1);
-        ready.push_back(n);
-        //n->reset();
-
-        // reset node chain
-        node* prev = n;
-        n = n->next;
-        prev->next = NULL;
-    }
-    start = NULL;
-
-    printf("run: ready size = %d\n", ready.size());
-
-}
