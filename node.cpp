@@ -227,6 +227,7 @@ vector<node*> tree::dispatch()
 node::node(int _id, int _op)
 {
     id = _id; 
+    done = 0;
     assert(_op >= ADD && _op <= SHI);
     op = _op;
     ops = NOP;

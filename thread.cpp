@@ -20,7 +20,7 @@ void thread::schedule_from_dfg()
     int cnt = 0;
     for( auto &t : *forest)
     {
-        if( t->pres.size() == 0 && !t->done ) 
+        if( !t->done ) 
         {
             vector<node*> new_work = t->dispatch();
             (*forest).erase((*forest).begin()+cnt);
@@ -178,15 +178,18 @@ int dy_pgm(thread* t0, thread* t1)
         int condi = path[path.size()-1-i];
         if(condi == DIA) 
         {
+            t0->wait[i_t0]->done = t1->wait[i_t1]->done = 1;
             t0->cyc[base+i] = t0->wait[i_t0++];
             t1->cyc[base+i] = t1->wait[i_t1++];
         }
         else if(condi == LEFT)
         {
+            t1->wait[i_t1]->done = 1;
             t1->cyc[base+i] = t1->wait[i_t1++];
         }
         else if(condi == UP)
         {
+            t0->wait[i_t0]->done = 1;
             t0->cyc[base+i] = t0->wait[i_t0++];
         }
     }
@@ -220,4 +223,102 @@ void show_vector(const vector<node*>& shown)
     }
     printf("\n");
 }
+
+super_node* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest)
+{
+    int cyc_cnt = 0;
+    while(vforest.size() > 0)
+    {
+        if(t0->wait.size() == 0)
+            t0->schedule_from_dfg();
+        if(t1->wait.size() == 0)
+            t1->schedule_from_dfg();
+
+        // any of thread has no work, break
+        if(t0->wait.size() == 0 || t1->wait.size() == 0)
+            break;
+
+        int stride = dy_pgm(t0, t1);
+
+        assert(t0->cyc.size() == t1->cyc.size());
+        int run = 0;
+        for(int i = 0; i < stride; i++)
+        {
+            printf("cyc\n");
+            assert(t0->cyc[cyc_cnt] || t1->cyc[cyc_cnt]);
+            if(t0->cyc[cyc_cnt])
+            {
+                printf("cyc %d: ", cyc_cnt);
+                t0->cyc[cyc_cnt]->process(1);
+                run++;
+            }
+            if(t1->cyc[cyc_cnt])
+            {
+                printf("cyc %d: ", cyc_cnt);
+                t1->cyc[cyc_cnt]->process(1);
+                run++;
+            }
+            cyc_cnt ++;
+        }
+        printf("cyc: this round %d\n", run);
+    }
+    printf("remaining: t0: %d, t1: %d\n", t0->wait.size(), t1->wait.size());
+
+    assert(t0->wait.size() == 0 || t1->wait.size() == 0);
+
+    node* ret; 
+    if(t0->wait.size() == 0 && t1->wait.size() == 0)
+        ret =  NULL;
+    else if(t0->wait.size() == 0)
+    {
+        for( auto &it : t1->wait)
+        {
+            it->wrap->done = 0;
+        }
+        ret =  t1->wait.back()->wrap;
+        t1->wait.clear();
+    }
+    else if(t1->wait.size() == 0)
+    {
+        for( auto &it : t0->wait)
+        {
+            it->wrap->done = 0;
+        }
+        ret =  t0->wait.back()->wrap;
+        t0->wait.clear();
+    }
+    else 
+    {
+        printf("inter_tree_schedule return error\n");
+    }
+    return ret;
+}
+
+void intra_tree_schedule(thread* t0, thread* t1, super_node* root)
+{
+    assert(t0->wait.size() == 0 && t1->wait.size() == 0);
+    super_node* sn = root;
+    while(sn->pres.size() == 2)
+    {
+        super_node* left = *sn->pres.begin();
+        super_node* right = *sn->pres.rbegin();
+        if( !left->done && !left->done )
+        {
+        
+        }
+        else if( !left->done )
+        {
+            // right done, go left 
+            sn = left;  
+
+        }
+        else if( !right->done )
+        {
+            // left done, go right  
+            sn = right;
+        }
+    }
+}
+
+
 

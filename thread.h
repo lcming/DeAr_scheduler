@@ -49,6 +49,13 @@ class thread
 };
 
 int dy_pgm(thread* t0, thread* t1);
+
+/** 0: t0 remaining
+ *  1: t1 remaining
+ *  2: complete
+ */
+super_node* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest); 
+void intra_tree_schedule(thread* t0, thread* t1, node* root);
 void show_vector(const vector<node*>& shown);
 
 #endif

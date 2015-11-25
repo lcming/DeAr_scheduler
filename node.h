@@ -46,6 +46,7 @@ class node
         int op;
         int ops; // stack operation
         pint rs;
+        int done;
         int rd;
         node* first;
         pair<node*, node*> pres;
