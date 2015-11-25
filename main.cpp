@@ -1,5 +1,5 @@
 #include "node.h"
-#include "arbiter.h"
+#include "thread.h"
 #include "dfg.h"
 #include <fstream>
 #include <vector>
@@ -30,13 +30,15 @@ int main(int argc, char* argv[])
     
     printf("overview: # of leaf = %d, result = %d\n", leaf.size(), result.size());
 
-    for(it = result.begin(); it != result.end(); ++it)
+    for( auto &it : result)
     {
         //tree* rt = new tree(*it, 1);
-        tree* rt = build_tree(*it);
-        (*it)->t = rt;
+        tree* rt = build_tree(it);
+        it->t = rt;
         printf("tree: tree pres = %d, sucs = %d\n", rt->pres.size(), rt->sucs.size());
     }
+
+
 /*
     for(int i = 0; i < 10; i++)
     {
@@ -44,27 +46,53 @@ int main(int argc, char* argv[])
         reset_dfg();
     }
     test_single_thread(1);
-    reset_dfg();
-    */
-    set<tree*>::iterator tit;
-    set<run*> run_pool;
-    for(tit = forest.begin(); tit != forest.end(); ++tit)
+*/
+
+    vector<tree*> vforest;
+    for( auto &it : forest)
     {
-        if( (*tit)->pres.size() == 0 && (*tit)->done != 1) 
+        vforest.push_back(it);
+    }
+
+    printf("vforest size = %d\n", vforest.size());
+
+    thread* t0 = new thread(0, vforest);
+    thread* t1 = new thread(1, vforest);
+
+    int cyc_cnt = 0;
+
+    while(vforest.size() > 0)
+    {
+        if(t0->wait.size() == 0)
+            t0->schedule_from_dfg();
+        if(t1->wait.size() == 0)
+            t1->schedule_from_dfg();
+
+        int stride = dy_pgm(t0, t1);
+
+        assert(t0->cyc.size() == t1->cyc.size());
+        int run = 0;
+        for(int i = 0; i < stride; i++)
         {
-            run* input = new run(*tit);
-            run_pool.insert(input);
+            printf("cyc\n");
+            assert(t0->cyc[cyc_cnt] || t1->cyc[cyc_cnt]);
+            if(t0->cyc[cyc_cnt])
+            {
+                printf("cyc %d: ", cyc_cnt);
+                t0->cyc[cyc_cnt]->process(1);
+                run++;
+            }
+            if(t1->cyc[cyc_cnt])
+            {
+                printf("cyc %d: ", cyc_cnt);
+                t1->cyc[cyc_cnt]->process(1);
+                run++;
+            }
+            cyc_cnt ++;
         }
-        reset_dfg();
+        printf("cyc: this round %d\n", run);
     }
-
-    set<run*>::iterator rit;
-    for(rit = run_pool.begin(); rit != run_pool.end(); ++rit)
-    {
-        printf("run: ");
-        (*rit)->dispatch_ready(1);
-    }
-
+    printf("remaining: t0: %d, t1: %d\n", t0->wait.size(), t1->wait.size());
 
 
 

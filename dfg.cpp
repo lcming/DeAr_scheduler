@@ -129,20 +129,16 @@ vector<node*> init_dfg(char* filename)
 void test_single_thread(int show)
 {
 
-    set<tree*>::iterator tit;
-    for(tit = forest.begin(); tit != forest.end(); ++tit)
+    for( auto &tit : forest)
     {
         // find ready tree
-        if( (*tit)->pres.size() == 0) 
+        if( tit->pres.size() == 0 && tit->done != 1) 
         {
-            if((*tit)->done != 1)
+            vector<node*> run;
+            run = tit->dispatch();
+            for(int i = 0; i < run.size(); i++)
             {
-                vector<node*> run;
-                run = (*tit)->dispatch();
-                for(int i = 0; i < run.size(); i++)
-                {
-                    run[i]->process(show);
-                }
+                run[i]->process(show);
             }
         }
     }
