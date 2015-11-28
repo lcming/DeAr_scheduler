@@ -375,7 +375,9 @@ void super_node::schedule(vector<node*>& ret)
                 exit(1);
             }
         }
-        ret.push_back(n);
+        if(!n->done)
+            ret.push_back(n);
+
         previous = n;
     }
     this->done = 1;

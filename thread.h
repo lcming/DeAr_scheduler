@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string>
+#include <algorithm>
 #include "node.h"
 #include "dfg.h"
 
@@ -38,7 +39,6 @@ class thread
         // tree might be put in wait queue later
         set<tree*> candidates;
 
-        vector<node*> ready;
         vector<node*> wait;
 
         // pick up a candidate from candi set
@@ -48,14 +48,15 @@ class thread
         void schedule_from_dfg();
 };
 
-int dy_pgm(thread* t0, thread* t1);
+void dy_pgm(thread* t0, thread* t1);
+super_node* inv_dy_pgm(thread* t0, thread* t1);
 
 /** 0: t0 remaining
  *  1: t1 remaining
  *  2: complete
  */
 super_node* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest); 
-void intra_tree_schedule(thread* t0, thread* t1, node* root);
+void intra_tree_schedule(thread* t0, thread* t1, super_node* remain_root);
 void show_vector(const vector<node*>& shown);
 
 #endif

@@ -62,10 +62,33 @@ int main(int argc, char* argv[])
     thread* t0 = new thread(0, vforest);
     thread* t1 = new thread(1, vforest);
 
-    super_node* remain = inter_tree_schedule(t0, t1, vforest);
+    super_node* remain_root = inter_tree_schedule(t0, t1, vforest);
+        
+
+    int reverse_head = t0->cyc.end() - t0->cyc.begin();
+    intra_tree_schedule(t0, t1, remain_root);
+    int reverse_tail = t0->cyc.end() - t0->cyc.begin();
+
+    reverse(t0->cyc.begin()+reverse_head, t0->cyc.begin()+reverse_tail);
+    reverse(t1->cyc.begin()+reverse_head, t1->cyc.begin()+reverse_tail);
+    // final result
+    assert(t0->cyc.size() == t1->cyc.size());
+    int run = 0;
+    for(int i = 0; i < t0->cyc.size(); i++)
+    {
+        printf("cyc %d\n", run);
+        if(t0->cyc[run])
+        {
+            t0->cyc[run]->process(1);
+        }
+        if(t1->cyc[run])
+        {
+            t1->cyc[run]->process(1);
+        }
+        run++;
+    }
+
     
-
-
 
     return 0; 
 }
