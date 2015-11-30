@@ -75,8 +75,8 @@ class super_node
         int ss; // stack size
         int done; // done flag
         int dest; // result destination
-        int level;
         int ready;
+        int level;
         vector<node*> cas;
         set<super_node*> pres;
         set<super_node*> sucs;
@@ -87,7 +87,9 @@ class super_node
         void add_node(node* n);
         void connect(super_node* dst);
         void rec_schedule(vector<node*>& ret);
+        void inv_rec_schedule(vector<node*>& ret);
         void schedule(vector<node*>& ret);
+        int get_level();
         //void dbg();
 
         ~super_node();

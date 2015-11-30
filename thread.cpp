@@ -354,10 +354,10 @@ void intra_tree_schedule(thread* t0, thread* t1, super_node* sn)
         super_node* left = *sn->pres.begin();
         super_node* right = *sn->pres.rbegin();
         vector<node*> r_left, r_right;
-        left->rec_schedule(r_left);
-        right->rec_schedule(r_right);
+        left->inv_rec_schedule(r_left);
+        right->inv_rec_schedule(r_right);
 
-        printf("intra: left size = %d, right size = %d\n", r_left.size(), r_right.size());
+        printf("intra: %s, left size = %d, right size = %d\n", sn->id.c_str(), r_left.size(), r_right.size());
         // fix false done
         for(auto &it : r_left)
             it->wrap->done = 0;
@@ -620,16 +620,28 @@ super_node* inv_dy_pgm(thread* t0, thread* t1)
             printf("inv: %s\n", ret[0]->id.c_str());
             return ret[0];
         }
+        /*
         else if(ret.size() == 2)
         {
             assert( *ret[0]->sucs.begin() == *ret[0]->sucs.begin() );
         
             return *ret[0]->sucs.begin();
         }
+        */
         else
         {
-            printf("fatal: inv_dy_pgm return error\n");
-            exit(1);
+            //printf("fatal: inv_dy_pgm return error, ret size = %d\n", ret.size());
+            //exit(1);
+            int hit;
+            int min_level = 999;
+            for(int i = 0; i < ret.size(); i++)
+            {
+                if( ret[i]->get_level() < min_level) 
+                {
+                    hit = i; 
+                }
+            }
+            return *ret[hit]->sucs.begin();
         }
         
     }

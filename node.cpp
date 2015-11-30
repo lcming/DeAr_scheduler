@@ -286,6 +286,23 @@ super_node::~super_node()
 {
 
 }
+
+int super_node::get_level()
+{
+    int ret = 0; 
+    super_node* sn = this;
+    while(1)
+    {
+        assert(sn->sucs.size() <= 1);
+        if(sn->sucs.size() == 0)   
+            break;
+        sn = *sn->sucs.begin();
+        ret ++;
+    }
+    return ret;
+}
+    
+
 int tree::analyze_stack(super_node* target)
 {
     sns::iterator it;
@@ -382,6 +399,18 @@ void super_node::schedule(vector<node*>& ret)
     }
     this->done = 1;
 
+}
+void super_node::inv_rec_schedule(vector<node*>& ret)
+{
+    assert(this->pres.size() == 2 || this->pres.size() == 0);
+    if (this->pres.size() == 2)
+    {
+        super_node* left = *pres.begin(); 
+        super_node* right = *pres.rbegin(); 
+        right->inv_rec_schedule(ret);
+        left->inv_rec_schedule(ret);
+    }
+    this->schedule(ret);
 }
 
 void super_node::rec_schedule(vector<node*>& ret)

@@ -88,6 +88,9 @@ int main(int argc, char* argv[])
         run++;
     }
 
+    float opc = (float)(nodes.size()) / (float)(t0->cyc.size());
+    printf("ops = %f\n", opc);
+
     
 
     return 0; 
