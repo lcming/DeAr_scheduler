@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
     thread* t0 = new thread(0, vforest);
     thread* t1 = new thread(1, vforest);
 
-    super_node* remain_root = inter_tree_schedule(t0, t1, vforest);
+    vector<super_node*> remain_root = inter_tree_schedule(t0, t1, vforest);
         
 
     int reverse_head = t0->cyc.end() - t0->cyc.begin();
