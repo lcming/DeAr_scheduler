@@ -2,10 +2,9 @@
 
 extern node* start;
 
-thread::thread(int _id, vector<tree*>& _forest)
+thread::thread(int _id)
 {
     id = _id;
-    forest = &_forest;
 }
 
 
@@ -122,8 +121,8 @@ void dy_pgm(thread* t0, thread* t1, set<tree*>& trigger)
     {
         // special case here
         // this implies 2 thread cannot help at all
-        // so do it using single thread instead
-        t0->wait.insert(t0->wait.begin(), t1->wait.begin(), t1->wait.end());
+        // so we only schedule a thread, and preserve another one
+        //t0->wait.insert(t0->wait.begin(), t1->wait.begin(), t1->wait.end());
         for(int i = 0; i < t0->wait.size(); i++)
         {
             t0->cyc.push_back(t0->wait[i]);
@@ -134,7 +133,7 @@ void dy_pgm(thread* t0, thread* t1, set<tree*>& trigger)
                 trigger.insert(t0->wait[i]->wrap->t);
         }
         t0->wait.clear();
-        t1->wait.clear();
+        //t1->wait.clear();
         return;
     }
 
@@ -263,7 +262,61 @@ void show_vector(const vector<node*>& shown)
     printf("\n");
 }
 
-vector<super_node*> inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest)
+void trigger_trees(thread* t0, thread* t1, set<tree*> trigger, vector<tree*>& vforest)
+{
+    for( auto &i : trigger)
+    {
+        printf("tree done: %s\n", i->root->id.c_str());
+        for( auto &j : i->sucs)
+        {
+            set<tree*>::iterator k = j->pres.find(i);
+            // trigger
+            j->pres.erase(k);
+            if(j->pres.size() == 0)
+            {
+                vforest.push_back(j);
+            }
+            else if(j->pres.size() == 1 && (*j->pres.begin())->done)
+            {
+                thread* tx = t0->wait.size() > 0 ? t0 : t1;
+                vector<node*> new_work = j->dispatch();
+
+                // dbg
+                printf("thread %d: get new work from trigger tree: ", tx->id);
+                for( auto &n : new_work)
+                    printf("%d ", n->id);
+                printf("\n");
+
+                // find correct place to insert nodes
+                node* rn = (*j->pres.begin())->root->cas[0];
+                printf("try find %d\n", rn->id);
+                int hit = 0;
+                for( int i = 0; i < tx->wait.size(); i++)
+                {
+                    printf("find %d\n", tx->wait[i]->id);
+                    if ( tx->wait[i] == rn)
+                    {
+                        hit = i;
+                        break;
+                    }
+                }
+
+                tx->wait.insert(tx->wait.begin()+hit, new_work.begin(), new_work.end());
+
+                // dbg
+                printf("thread %d: wait queue: ", tx->id);
+                for( auto &n : tx->wait)
+                    printf("%d ", n->id);
+                printf("\n");
+            }
+            else
+            {
+                // just handle by some free tree 
+            }
+        }
+    }
+}
+super_node* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest)
 {
     int cyc_cnt = 0;
     while(vforest.size() > 0)
@@ -280,61 +333,36 @@ vector<super_node*> inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& v
         set<tree*> trigger;
         dy_pgm(t0, t1, trigger);
         // trigger the trees it doninates
-        for( auto &i : trigger)
-        {
-            printf("tree done: %s\n", i->root->id.c_str());
-            for( auto &j : i->sucs)
-            {
-                set<tree*>::iterator k = j->pres.find(i);
-                j->pres.erase(k);
-                if(j->pres.size() == 0)
-                {
-                    vforest.push_back(j);
-                }
-                else if(j->pres.size() == 1 && (*j->pres.begin())->done)
-                {
-                    thread* tx = t0->wait.size() > 0 ? t0 : t1;
-                    vector<node*> new_work = j->dispatch();
-                    printf("thread %d: get new work: ", tx->id);
-
-                    for( auto &n : new_work)
-                        printf("%d ", n->id);
-                    printf("\n");
-
-                    tx->wait.insert(tx->wait.end(), new_work.begin(), new_work.end());
-                    printf("thread %d: wait queue: ", tx->id);
-                    for( auto &n : tx->wait)
-                        printf("%d ", n->id);
-                    printf("\n");
-                }
-            }
-        }
+        trigger_trees(t0, t1, trigger, vforest);
    }
     printf("remaining: t0: %d, t1: %d\n", t0->wait.size(), t1->wait.size());
 
     assert(t0->wait.size() == 0 || t1->wait.size() == 0);
 
+    // finalize
     vector<super_node*> ret; 
     if(t0->wait.size() == 0 && t1->wait.size() == 0)
     {
         printf("remaining: no remaining\n");
     }
-    else if(t0->wait.size() == 0)
+    else if(t1->wait.size() > 0)
     {
         for( auto &it : t1->wait)
         {
             it->wrap->done = 0;
+            it->wrap->t->done = 0;
             // find root sn to return
             if(it == it->wrap->t->root->cas[0])
                 ret.push_back(it->wrap);
         }
         t1->wait.clear();
     }
-    else if(t1->wait.size() == 0)
+    else if(t0->wait.size() > 0)
     {
         for( auto &it : t0->wait)
         {
             it->wrap->done = 0;
+            it->wrap->t->done = 0;
             // find root sn to return
             if(it == it->wrap->t->root->cas[0])
                 ret.push_back(it->wrap);
@@ -351,89 +379,87 @@ vector<super_node*> inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& v
         printf("remaining: root %s\n", ret[i]->id.c_str());
     }
 
-    return ret;
+    // we only do intra on this tree, remaining is done in next iteration
+    return ret[0];
 }
 
-void intra_tree_schedule(thread* t0, thread* t1, vector<super_node*> remain_roots)
+void intra_tree_schedule(thread* t0, thread* t1, super_node* remain_roots)
 {
     assert(t0->wait.size() == 0 && t1->wait.size() == 0);
-    printf("intra: entry size = %d\n", remain_roots.size());
-    for(int j = remain_roots.size()-1; j >= 0; j--)
+
+    printf("intra: %s\n", remain_roots->id.c_str());
+    vector<node*> n_list;
+    // only want to analyze this sn instead of recursion
+    remain_roots->schedule(n_list);
+
+    // r_sn must be done sequentially
+    for(int i = 0; i < n_list.size() ; i++)
     {
-        printf("intra: %s\n", remain_roots[j]->id.c_str());
-        vector<node*> n_list;
-        // only want to analyze this sn instead of recursion
-        remain_roots[j]->schedule(n_list);
+        // reverse order 
+        t0->cyc.push_back(n_list[i]);
+        t1->cyc.push_back(NULL);
+        n_list[i]->done = 1;
+    }
 
-        // r_sn must be done sequentially
-        for(int i = 0; i < n_list.size() ; i--)
+
+    if(remain_roots->pres.size() == 2)
+    {
+        super_node* left = *remain_roots->pres.begin();
+        super_node* right = *remain_roots->pres.rbegin();
+        vector<node*> r_left, r_right;
+        left->inv_rec_schedule(r_left);
+        right->inv_rec_schedule(r_right);
+
+        printf("intra: %s, left size = %d, right size = %d\n", remain_roots->id.c_str(), r_left.size(), r_right.size());
+        // fix false done
+        for(auto &it : r_left)
+            it->wrap->done = 0;
+        for(auto &it : r_right)
+            it->wrap->done = 0;
+
+        if(r_left.size() == 0 && r_right.size() == 0)
         {
-            // reverse order 
-            t0->cyc.push_back(n_list[i]);
-            t1->cyc.push_back(NULL);
-            n_list[i]->done = 1;
+            printf("inra: no more work in r_left and r_right\n");
+            // nothing 
         }
-
-
-        if(remain_roots[j]->pres.size() == 2)
+        else if(r_left.size() > 0 && r_right.size() > 0)
         {
-            super_node* left = *remain_roots[j]->pres.begin();
-            super_node* right = *remain_roots[j]->pres.rbegin();
-            vector<node*> r_left, r_right;
-            left->inv_rec_schedule(r_left);
-            right->inv_rec_schedule(r_right);
+            // put on wait queue
+            t0->wait.insert(t0->wait.begin(), r_left.begin(), r_left.end());
+            t1->wait.insert(t1->wait.begin(), r_right.begin(), r_right.end());
 
-            printf("intra: %s, left size = %d, right size = %d\n", remain_roots[j]->id.c_str(), r_left.size(), r_right.size());
-            // fix false done
-            for(auto &it : r_left)
-                it->wrap->done = 0;
-            for(auto &it : r_right)
-                it->wrap->done = 0;
-
-            if(r_left.size() == 0 && r_right.size() == 0)
+            vector<super_node*> next_sn;
+            next_sn.push_back(inv_dy_pgm(t0, t1));
+            if(t0->wait.size() == 0 && t1->wait.size() == 0)
             {
-                printf("inra: no more work in r_left and r_right\n");
-                // nothing 
+            
             }
-            else if(r_left.size() > 0 && r_right.size() > 0)
+            else if(t0->wait.size() > 0)
             {
-                // put on wait queue
-                t0->wait.insert(t0->wait.begin(), r_left.begin(), r_left.end());
-                t1->wait.insert(t1->wait.begin(), r_right.begin(), r_right.end());
-
-                vector<super_node*> next_sn;
-                next_sn.push_back(inv_dy_pgm(t0, t1));
-                if(t0->wait.size() == 0 && t1->wait.size() == 0)
-                {
-                
-                }
-                else if(t0->wait.size() > 0)
-                {
-                    t0->wait.clear();
-                    intra_tree_schedule(t0, t1, next_sn);
-                }
-                else if(t1->wait.size() > 0)
-                {
-                    t1->wait.clear();
-                    intra_tree_schedule(t0, t1, next_sn);
-                }
-                else
-                {
-                    printf("fatal\n");
-                    exit(1);
-                }
+                t0->wait.clear();
+                intra_tree_schedule(t0, t1, next_sn);
+            }
+            else if(t1->wait.size() > 0)
+            {
+                t1->wait.clear();
+                intra_tree_schedule(t0, t1, next_sn);
             }
             else
             {
-                // recursive intra_schedule 
-                vector<super_node*> next_sn ;
-                super_node* new_sn = r_left.size() > 0 ? left : right;
-                next_sn.push_back(new_sn);
-                intra_tree_schedule(t0, t1, next_sn);
+                printf("fatal\n");
+                exit(1);
             }
         }
-
+        else
+        {
+            // recursive intra_schedule 
+            vector<super_node*> next_sn ;
+            super_node* new_sn = r_left.size() > 0 ? left : right;
+            next_sn.push_back(new_sn);
+            intra_tree_schedule(t0, t1, next_sn);
+        }
     }
+
 
 }
 
@@ -523,15 +549,16 @@ super_node* inv_dy_pgm(thread* t0, thread* t1)
         // special case here
         // this implies 2 thread cannot help at all
         // so do it using single thread instead
-        t0->wait.insert(t0->wait.begin(), t1->wait.begin(), t1->wait.end());
+        //t0->wait.insert(t0->wait.begin(), t1->wait.begin(), t1->wait.end());
         for(int i = 0; i < t0->wait.size(); i++)
         {
             t0->cyc.push_back(t0->wait[i]);
             t1->cyc.push_back(NULL);
         }
         t0->wait.clear();
-        t1->wait.clear();
-        return NULL;
+        //t1->wait.clear();
+          
+        return t1->wait[0]->wrap;
     }
 
     printf("dp: best dispatch size for thread 0 = %d, thread 1 = %d\n", max_y, max_x);

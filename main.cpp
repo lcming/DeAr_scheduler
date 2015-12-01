@@ -48,44 +48,63 @@ int main(int argc, char* argv[])
     test_single_thread(1);
 */
 
-    vector<tree*> vforest;
+    thread* t0 = new thread(0);
+    thread* t1 = new thread(1);
+    int run = 0;
 
     // insert all free trees
-    for( auto &it : forest)
+    while(1)
     {
-        if(it->pres.size() == 0)
-            vforest.push_back(it);
-    }
-
-    printf("vforest size = %d\n", vforest.size());
-
-    thread* t0 = new thread(0, vforest);
-    thread* t1 = new thread(1, vforest);
-
-    vector<super_node*> remain_root = inter_tree_schedule(t0, t1, vforest);
-        
-
-    int reverse_head = t0->cyc.end() - t0->cyc.begin();
-    intra_tree_schedule(t0, t1, remain_root);
-    int reverse_tail = t0->cyc.end() - t0->cyc.begin();
-
-    reverse(t0->cyc.begin()+reverse_head, t0->cyc.begin()+reverse_tail);
-    reverse(t1->cyc.begin()+reverse_head, t1->cyc.begin()+reverse_tail);
-    // final result
-    assert(t0->cyc.size() == t1->cyc.size());
-    int run = 0;
-    for(int i = 0; i < t0->cyc.size(); i++)
-    {
-        printf("cyc %d\n", run);
-        if(t0->cyc[run])
+        vector<tree*> vforest;
+        for( auto &it : forest)
         {
-            t0->cyc[run]->process(1);
+            if(it->pres.size() == 0 && !it->done)
+                vforest.push_back(it);
         }
-        if(t1->cyc[run])
+
+        printf("vforest size = %d\n", vforest.size());
+        if(vforest.size() == 0)
+            break;
+
+        // bind forest
+        t0->forest = &vforest;
+        t1->forest = &vforest;
+
+
+
+        tree* remain_tree = inter_tree_schedule(t0, t1, vforest);
+            
+
+        int reverse_head = t0->cyc.end() - t0->cyc.begin();
+        intra_tree_schedule(t0, t1, remain_tree->root);
+        int reverse_tail = t0->cyc.end() - t0->cyc.begin();
+
+        remain_tree->done = 1;
+        // update from intra schedule
+        for( auto &t : remain_tree->sucs)
         {
-            t1->cyc[run]->process(1);
+            set<tree*>::iterator it = t->pres.find(remain_tree);
+            t->pres.erase(it);
         }
-        run++;
+
+
+        reverse(t0->cyc.begin()+reverse_head, t0->cyc.begin()+reverse_tail);
+        reverse(t1->cyc.begin()+reverse_head, t1->cyc.begin()+reverse_tail);
+        // final result
+        assert(t0->cyc.size() == t1->cyc.size());
+        for(int i = 0; i < t0->cyc.size(); i++)
+        {
+            printf("cyc %d\n", run);
+            if(t0->cyc[run])
+            {
+                t0->cyc[run]->process(1);
+            }
+            if(t1->cyc[run])
+            {
+                t1->cyc[run]->process(1);
+            }
+            run++;
+        }
     }
 
     float opc = (float)(nodes.size()) / (float)(t0->cyc.size());

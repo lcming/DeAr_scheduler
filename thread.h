@@ -28,7 +28,7 @@ class thread
 {
     public:
         int id;
-        thread(int _id, vector<tree*>& _forest);
+        thread(int _id);
 
         vector<node*> cyc;
         vector<tree*> *forest;
@@ -49,14 +49,15 @@ class thread
 };
 
 void dy_pgm(thread* t0, thread* t1, set<tree*>& trigger);
+void trigger_trees(thread* t0, thread* t1, set<tree*> trigger, vector<tree*>& vforest);
 super_node* inv_dy_pgm(thread* t0, thread* t1);
 
 /** 0: t0 remaining
  *  1: t1 remaining
  *  2: complete
  */
-vector<super_node*> inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest); 
-void intra_tree_schedule(thread* t0, thread* t1, vector<super_node*> remain_roots);
+super_node* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest); 
+void intra_tree_schedule(thread* t0, thread* t1, super_node* remain_roots);
 void show_vector(const vector<node*>& shown);
 
 #endif

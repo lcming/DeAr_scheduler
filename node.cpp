@@ -142,22 +142,6 @@ vector<tree*> tree::initialize()
             WRITE : POP;
     }
 
-    /*
-    // cut the dependency of all sucs
-    for(it = sucs.begin(); it != sucs.end(); ++it)
-    {
-        it2 = (*it)->pres.find(this);
-        //(*it)->pres.erase(it2);
-
-        // backup, so we can restore the scheduling
-        ptree backup;
-        backup.first = *it;
-        backup.second = *it2;
-        restore_tree.insert(backup);
-
-    }
-    */
-
     return t_ready;
 }
 
