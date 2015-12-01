@@ -56,7 +56,7 @@ super_node* inv_dy_pgm(thread* t0, thread* t1);
  *  1: t1 remaining
  *  2: complete
  */
-super_node* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest); 
+tree* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest); 
 void intra_tree_schedule(thread* t0, thread* t1, super_node* remain_roots);
 void show_vector(const vector<node*>& shown);
 

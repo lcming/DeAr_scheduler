@@ -51,6 +51,7 @@ int main(int argc, char* argv[])
     thread* t0 = new thread(0);
     thread* t1 = new thread(1);
     int run = 0;
+    int* hit = (int*)calloc(sizeof(int), nodes.size());
 
     // insert all free trees
     while(1)
@@ -90,22 +91,39 @@ int main(int argc, char* argv[])
 
         reverse(t0->cyc.begin()+reverse_head, t0->cyc.begin()+reverse_tail);
         reverse(t1->cyc.begin()+reverse_head, t1->cyc.begin()+reverse_tail);
+    }
         // final result
         assert(t0->cyc.size() == t1->cyc.size());
         for(int i = 0; i < t0->cyc.size(); i++)
         {
             printf("cyc %d\n", run);
+            assert(t0->cyc[run] || t1->cyc[run]);
             if(t0->cyc[run])
             {
                 t0->cyc[run]->process(1);
+                if(t0->cyc[run])
+                {
+                    hit[t0->cyc[run]->id] = 1;
+                }
             }
             if(t1->cyc[run])
             {
                 t1->cyc[run]->process(1);
+                if(t1->cyc[run])
+                {
+                    hit[t1->cyc[run]->id] = 1;
+                }
             }
             run++;
         }
+
+    printf("nodes not done:");
+    for(int i = 0; i < nodes.size(); i++)
+    {
+        if(!hit[i]) 
+            printf("%d ", i);
     }
+    printf("\n");
 
     float opc = (float)(nodes.size()) / (float)(t0->cyc.size());
     printf("ops = %f\n", opc);

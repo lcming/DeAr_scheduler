@@ -316,7 +316,7 @@ void trigger_trees(thread* t0, thread* t1, set<tree*> trigger, vector<tree*>& vf
         }
     }
 }
-super_node* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest)
+tree* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest)
 {
     int cyc_cnt = 0;
     while(vforest.size() > 0)
@@ -380,7 +380,7 @@ super_node* inter_tree_schedule(thread* t0, thread* t1, vector<tree*>& vforest)
     }
 
     // we only do intra on this tree, remaining is done in next iteration
-    return ret[0];
+    return ret[0]->t;
 }
 
 void intra_tree_schedule(thread* t0, thread* t1, super_node* remain_roots)
@@ -428,8 +428,7 @@ void intra_tree_schedule(thread* t0, thread* t1, super_node* remain_roots)
             t0->wait.insert(t0->wait.begin(), r_left.begin(), r_left.end());
             t1->wait.insert(t1->wait.begin(), r_right.begin(), r_right.end());
 
-            vector<super_node*> next_sn;
-            next_sn.push_back(inv_dy_pgm(t0, t1));
+            super_node* next_sn = inv_dy_pgm(t0, t1);
             if(t0->wait.size() == 0 && t1->wait.size() == 0)
             {
             
@@ -453,9 +452,7 @@ void intra_tree_schedule(thread* t0, thread* t1, super_node* remain_roots)
         else
         {
             // recursive intra_schedule 
-            vector<super_node*> next_sn ;
-            super_node* new_sn = r_left.size() > 0 ? left : right;
-            next_sn.push_back(new_sn);
+            super_node* next_sn = r_left.size() > 0 ? left : right;
             intra_tree_schedule(t0, t1, next_sn);
         }
     }
