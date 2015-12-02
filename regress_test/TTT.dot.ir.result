@@ -1,6 +1,0 @@
-schedule   3: add, %-1(no WB), % 0, % 1, PUSH
-schedule   0: add, %-1(no WB), % 2, % 3, NOP
-schedule   1: mul, %-1(no WB), %32(ADD), % 4, NOP
-schedule   2: add, %-1(no WB), %33(MUL), % 5, POP
-schedule   4: mul, %-1(no WB), %32(ADD), %35(STACK), NOP
-schedule   5: add, % 7, %33(MUL), % 6, NOP
