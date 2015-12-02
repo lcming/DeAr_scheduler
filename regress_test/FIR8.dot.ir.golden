@@ -1,0 +1,15 @@
+schedule   8: mul, %-1(no WB), % 0, % 1, PUSH
+schedule   7: mul, %-1(no WB), % 2, % 3, POP
+schedule   0: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule   9: mul, %-1(no WB), % 4, % 5, POP
+schedule   1: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  10: mul, %-1(no WB), % 6, % 7, POP
+schedule   2: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  11: mul, %-1(no WB), % 8, % 9, POP
+schedule   3: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  12: mul, %-1(no WB), %10, %11, POP
+schedule   4: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  13: mul, %-1(no WB), %12, %13, POP
+schedule   5: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  14: mul, %-1(no WB), %14, %15, POP
+schedule   6: add, %16, %33(MUL), %35(STACK), NOP

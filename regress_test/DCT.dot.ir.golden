@@ -1,0 +1,50 @@
+schedule   0: add, % 0, % 1, % 2, NOP
+schedule   2: add, %-1(no WB), % 3, % 4, PUSH
+schedule   8: add, % 5, % 0, %35(STACK), NOP
+schedule  10: add, %-1(no WB), % 0, %35(STACK), POP
+schedule  33: mul, % 6, %32(ADD), % 7, NOP
+schedule   1: add, % 8, % 9, %10, NOP
+schedule   3: add, %-1(no WB), %11, %12, PUSH
+schedule   9: add, %-1(no WB), % 8, %35(STACK), PUSH
+schedule  16: add, %-1(no WB), % 5, %35(STACK), NOP
+schedule  42: shi, %14, %32(ADD), %13, NOP
+schedule  17: add, %-1(no WB), % 5, %35(STACK), POP
+schedule  37: mul, %-1(no WB), %32(ADD), %15, NOP
+schedule  43: shi, %17, %33(MUL), %16, NOP
+schedule  11: add, %-1(no WB), % 8, %35(STACK), POP
+schedule  34: mul, %-1(no WB), %32(ADD), %18, PUSH
+schedule  18: add, %19, % 6, %35(STACK), NOP
+schedule  19: add, %-1(no WB), % 6, %35(STACK), POP
+schedule  38: mul, %-1(no WB), %32(ADD), %20, PUSH
+schedule  24: add, %-1(no WB), %19, %35(STACK), NOP
+schedule  44: shi, %22, %32(ADD), %21, NOP
+schedule  45: shi, %24, %35(STACK), %23, POP
+schedule   4: add, %-1(no WB), %26, %27, NOP
+schedule  29: mul, %25, %32(ADD), %28, NOP
+schedule   6: add, %-1(no WB), %29, %30, NOP
+schedule  31: mul, %-1(no WB), %32(ADD), %31, NOP
+schedule  41: shi, %-1(no WB), %33(MUL), % 0, PUSH
+schedule  12: add, % 1, %25, %35(STACK), NOP
+schedule  14: add, %-1(no WB), %25, %35(STACK), POP
+schedule  35: mul, % 2, %32(ADD), % 3, NOP
+schedule   5: add, %-1(no WB), % 5, % 6, NOP
+schedule  30: mul, % 4, %32(ADD), % 7, NOP
+schedule   7: add, %-1(no WB), % 8, % 9, NOP
+schedule  32: mul, %-1(no WB), %32(ADD), %10, PUSH
+schedule  13: add, %-1(no WB), % 4, %35(STACK), PUSH
+schedule  20: add, %11, % 1, %35(STACK), NOP
+schedule  21: add, %-1(no WB), % 1, %35(STACK), POP
+schedule  39: mul, %12, %32(ADD), %13, NOP
+schedule  15: add, %-1(no WB), % 4, %35(STACK), POP
+schedule  36: mul, %-1(no WB), %32(ADD), %14, PUSH
+schedule  22: add, %15, % 2, %35(STACK), NOP
+schedule  23: add, %-1(no WB), % 2, %35(STACK), POP
+schedule  40: mul, %-1(no WB), %32(ADD), %16, PUSH
+schedule  25: add, %-1(no WB), %15, %35(STACK), PUSH
+schedule  26: add, %-1(no WB), %11, %35(STACK), NOP
+schedule  46: shi, %18, %32(ADD), %17, NOP
+schedule  28: add, %-1(no WB), %12, %35(STACK), POP
+schedule  48: shi, %20, %32(ADD), %19, NOP
+schedule  27: add, %-1(no WB), %12, %35(STACK), NOP
+schedule  47: shi, %22, %32(ADD), %21, NOP
+schedule  49: shi, %24, %35(STACK), %23, POP

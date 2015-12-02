@@ -1,0 +1,120 @@
+schedule  14: mul, %-1(no WB), % 0, % 1, PUSH
+schedule  13: mul, %-1(no WB), % 2, % 3, POP
+schedule   3: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  12: mul, %-1(no WB), % 4, % 5, PUSH
+schedule  11: mul, %-1(no WB), % 6, % 7, POP
+schedule   2: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule   5: add, %-1(no WB), %32(ADD), %35(STACK), PUSH
+schedule  10: mul, %-1(no WB), % 8, % 9, PUSH
+schedule   9: mul, %-1(no WB), %10, %11, POP
+schedule   1: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule   8: mul, %-1(no WB), %12, %13, PUSH
+schedule   7: mul, %-1(no WB), %14, %15, POP
+schedule   0: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule   4: add, %-1(no WB), %32(ADD), %35(STACK), POP
+schedule   6: add, %16, %32(ADD), %35(STACK), NOP
+schedule  29: mul, %-1(no WB), %17, %18, PUSH
+schedule  28: mul, %-1(no WB), %19, %20, POP
+schedule  18: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  27: mul, %-1(no WB), %21, %22, PUSH
+schedule  26: mul, %-1(no WB), %23, %24, POP
+schedule  17: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  20: add, %-1(no WB), %32(ADD), %35(STACK), PUSH
+schedule  25: mul, %-1(no WB), %25, %26, PUSH
+schedule  24: mul, %-1(no WB), %27, %28, POP
+schedule  16: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  23: mul, %-1(no WB), %29, %30, PUSH
+schedule  22: mul, %-1(no WB), %31, % 0, POP
+schedule  15: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  19: add, %-1(no WB), %32(ADD), %35(STACK), POP
+schedule  21: add, % 1, %32(ADD), %35(STACK), NOP
+schedule  44: mul, %-1(no WB), % 2, % 3, PUSH
+schedule  43: mul, %-1(no WB), % 4, % 5, POP
+schedule  33: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  42: mul, %-1(no WB), % 6, % 7, PUSH
+schedule  41: mul, %-1(no WB), % 8, % 9, POP
+schedule  32: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  35: add, %-1(no WB), %32(ADD), %35(STACK), PUSH
+schedule  40: mul, %-1(no WB), %10, %11, PUSH
+schedule  39: mul, %-1(no WB), %12, %13, POP
+schedule  31: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  38: mul, %-1(no WB), %14, %15, PUSH
+schedule  37: mul, %-1(no WB), %16, %17, POP
+schedule  30: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  34: add, %-1(no WB), %32(ADD), %35(STACK), POP
+schedule  36: add, %18, %32(ADD), %35(STACK), NOP
+schedule  59: mul, %-1(no WB), %19, %20, PUSH
+schedule  58: mul, %-1(no WB), %21, %22, POP
+schedule  48: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  57: mul, %-1(no WB), %23, %24, PUSH
+schedule  56: mul, %-1(no WB), %25, %26, POP
+schedule  47: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  50: add, %-1(no WB), %32(ADD), %35(STACK), PUSH
+schedule  55: mul, %-1(no WB), %27, %28, PUSH
+schedule  54: mul, %-1(no WB), %29, %30, POP
+schedule  46: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  53: mul, %-1(no WB), %31, % 0, PUSH
+schedule  52: mul, %-1(no WB), % 1, % 2, POP
+schedule  45: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  49: add, %-1(no WB), %32(ADD), %35(STACK), POP
+schedule  51: add, % 3, %32(ADD), %35(STACK), NOP
+schedule  74: mul, %-1(no WB), % 4, % 5, PUSH
+schedule  73: mul, %-1(no WB), % 6, % 7, POP
+schedule  63: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  72: mul, %-1(no WB), % 8, % 9, PUSH
+schedule  71: mul, %-1(no WB), %10, %11, POP
+schedule  62: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  65: add, %-1(no WB), %32(ADD), %35(STACK), PUSH
+schedule  70: mul, %-1(no WB), %12, %13, PUSH
+schedule  69: mul, %-1(no WB), %14, %15, POP
+schedule  61: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  68: mul, %-1(no WB), %16, %17, PUSH
+schedule  67: mul, %-1(no WB), %18, %19, POP
+schedule  60: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  64: add, %-1(no WB), %32(ADD), %35(STACK), POP
+schedule  66: add, %20, %32(ADD), %35(STACK), NOP
+schedule  89: mul, %-1(no WB), %21, %22, PUSH
+schedule  88: mul, %-1(no WB), %23, %24, POP
+schedule  78: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  87: mul, %-1(no WB), %25, %26, PUSH
+schedule  86: mul, %-1(no WB), %27, %28, POP
+schedule  77: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  80: add, %-1(no WB), %32(ADD), %35(STACK), PUSH
+schedule  85: mul, %-1(no WB), %29, %30, PUSH
+schedule  84: mul, %-1(no WB), %31, % 0, POP
+schedule  76: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  83: mul, %-1(no WB), % 1, % 2, PUSH
+schedule  82: mul, %-1(no WB), % 3, % 4, POP
+schedule  75: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  79: add, %-1(no WB), %32(ADD), %35(STACK), POP
+schedule  81: add, % 5, %32(ADD), %35(STACK), NOP
+schedule 104: mul, %-1(no WB), % 6, % 7, PUSH
+schedule 103: mul, %-1(no WB), % 8, % 9, POP
+schedule  93: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule 102: mul, %-1(no WB), %10, %11, PUSH
+schedule 101: mul, %-1(no WB), %12, %13, POP
+schedule  92: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  95: add, %-1(no WB), %32(ADD), %35(STACK), PUSH
+schedule 100: mul, %-1(no WB), %14, %15, PUSH
+schedule  99: mul, %-1(no WB), %16, %17, POP
+schedule  91: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule  98: mul, %-1(no WB), %18, %19, PUSH
+schedule  97: mul, %-1(no WB), %20, %21, POP
+schedule  90: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule  94: add, %-1(no WB), %32(ADD), %35(STACK), POP
+schedule  96: add, %22, %32(ADD), %35(STACK), NOP
+schedule 119: mul, %-1(no WB), %23, %24, PUSH
+schedule 118: mul, %-1(no WB), %25, %26, POP
+schedule 108: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule 117: mul, %-1(no WB), %27, %28, PUSH
+schedule 116: mul, %-1(no WB), %29, %30, POP
+schedule 107: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule 110: add, %-1(no WB), %32(ADD), %35(STACK), PUSH
+schedule 115: mul, %-1(no WB), %31, % 0, PUSH
+schedule 114: mul, %-1(no WB), % 1, % 2, POP
+schedule 106: add, %-1(no WB), %33(MUL), %35(STACK), PUSH
+schedule 113: mul, %-1(no WB), % 3, % 4, PUSH
+schedule 112: mul, %-1(no WB), % 5, % 6, POP
+schedule 105: add, %-1(no WB), %33(MUL), %35(STACK), POP
+schedule 109: add, %-1(no WB), %32(ADD), %35(STACK), POP
+schedule 111: add, % 7, %32(ADD), %35(STACK), NOP
