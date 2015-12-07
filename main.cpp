@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
     printf("\n");
 
     float opc = (float)(nodes.size()) / (float)(t0->cyc.size());
-    printf("ops = %f\n", opc);
+    printf("opc = %f\n", opc);
 
     
 
