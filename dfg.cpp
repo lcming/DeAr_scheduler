@@ -105,7 +105,7 @@ vector<node*> init_dfg(char* filename)
             op_id = ADD;
         else if(op == "MUL" || op == "mul")
             op_id = MUL;
-        else if(op == "shl" || op == "ashr" || op == "shr" || op == "SHI")
+        else if(op == "shi" || op == "SHI")
             op_id = SHI;
         else
         {

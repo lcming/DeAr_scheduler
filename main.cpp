@@ -9,6 +9,7 @@
 using namespace std;
 
 
+
 int gid = 0;
 int rcnt = 0; // cnt for temp result
 sns leaf; // global vec to store leaf super node
@@ -126,7 +127,7 @@ int main(int argc, char* argv[])
     printf("\n");
 
     float opc = (float)(nodes.size()) / (float)(t0->cyc.size());
-    printf("opc = %f\n", opc);
+    printf("opc = %.3f\n", opc);
 
     
 
